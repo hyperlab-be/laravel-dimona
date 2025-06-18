@@ -1,0 +1,40 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up()
+    {
+        Schema::create('dimona_periods', function (Blueprint $table) {
+            $table->ulid('id')->primary();
+            $table->ulidMorphs('model');
+            $table->string('worker_type')->nullable();
+            $table->string('state');
+            $table->string('reference')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('dimona_declarations', function (Blueprint $table) {
+            $table->ulid('id')->primary();
+            $table->foreignUlid('dimona_period_id')->constrained();
+            $table->string('type');
+            $table->string('state');
+            $table->string('reference')->nullable();
+            $table->text('payload');
+            $table->text('anomalies')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('dimona_worker_type_exceptions', function (Blueprint $table) {
+            $table->ulid('id')->primary();
+            $table->string('social_security_number')->index();
+            $table->string('type');
+            $table->timestamp('starts_at');
+            $table->timestamp('ends_at');
+            $table->timestamps();
+        });
+    }
+};

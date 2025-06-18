@@ -1,10 +1,11 @@
 <?php
 
-namespace VendorName\Skeleton\Tests;
+namespace Hyperlab\Dimona\Tests;
 
+use Hyperlab\Dimona\DimonaServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\File;
 use Orchestra\Testbench\TestCase as Orchestra;
-use VendorName\Skeleton\SkeletonServiceProvider;
 
 class TestCase extends Orchestra
 {
@@ -13,14 +14,14 @@ class TestCase extends Orchestra
         parent::setUp();
 
         Factory::guessFactoryNamesUsing(
-            fn (string $modelName) => 'VendorName\\Skeleton\\Database\\Factories\\'.class_basename($modelName).'Factory'
+            fn (string $modelName) => 'Hyperlab\\Dimona\\Database\\Factories\\'.class_basename($modelName).'Factory'
         );
     }
 
     protected function getPackageProviders($app)
     {
         return [
-            SkeletonServiceProvider::class,
+            DimonaServiceProvider::class,
         ];
     }
 
@@ -28,10 +29,22 @@ class TestCase extends Orchestra
     {
         config()->set('database.default', 'testing');
 
-        /*
-         foreach (\Illuminate\Support\Facades\File::allFiles(__DIR__ . '/database/migrations') as $migration) {
+        // Load package migrations
+        foreach (File::allFiles(__DIR__.'/../database/migrations') as $migration) {
             (include $migration->getRealPath())->up();
-         }
-         */
+        }
+
+        // Load test migrations
+        foreach (File::allFiles(__DIR__.'/database/migrations') as $migration) {
+            (include $migration->getRealPath())->up();
+        }
+
+        // Configure the client
+        config()->set('dimona.clients.test-client', [
+            'client_id' => 'test-client-id',
+            'private_key_path' => 'test-private-key-path',
+        ]);
+
+        config()->set('dimona.default_client', 'test-client');
     }
 }
