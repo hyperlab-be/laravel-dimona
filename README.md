@@ -5,7 +5,7 @@
 [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/hyperlab/laravel-dimona/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/hyperlab/laravel-dimona/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/hyperlab/laravel-dimona.svg?style=flat-square)](https://packagist.org/packages/hyperlab/laravel-dimona)
 
-This is where your description should go. Limit it to a paragraph or two. Consider adding a small example.
+This package provides an easy way to interact with the Dimona API in Laravel applications.
 
 ## Installation
 
