@@ -2,7 +2,7 @@
 
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Tests\Models\TestEmployment;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -11,7 +11,7 @@ it('has a relationship to dimona periods', function () {
     $employment = TestEmployment::query()->create();
     $relationship = $employment->dimona_periods();
 
-    expect($relationship)->toBeInstanceOf(HasMany::class);
+    expect($relationship)->toBeInstanceOf(MorphMany::class);
     expect($relationship->getRelated())->toBeInstanceOf(DimonaPeriod::class);
     expect($relationship->getLocalKeyName())->toBe('id');
     expect($relationship->getForeignKeyName())->toBe('model_id');

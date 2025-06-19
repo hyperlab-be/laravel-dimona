@@ -3,14 +3,12 @@
 namespace Hyperlab\Dimona;
 
 use Hyperlab\Dimona\Models\DimonaPeriod;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 trait HasDimona
 {
-    public function dimona_periods(): HasMany
+    public function dimona_periods(): MorphMany
     {
-        return $this
-            ->hasMany(DimonaPeriod::class, 'model_id')
-            ->where('model_type', static::class);
+        return $this->morphMany(DimonaPeriod::class, 'model');
     }
 }

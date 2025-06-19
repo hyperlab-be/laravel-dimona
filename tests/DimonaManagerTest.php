@@ -10,9 +10,7 @@ it('can declare dimona for an employment', function () {
 
     $employment = TestEmployment::query()->create();
 
-    $result = Dimona::declare($employment);
-
-    expect($result)->toBe($employment);
+    Dimona::declare($employment);
 
     Queue::assertPushed(DeclareDimona::class, function (DeclareDimona $job) use ($employment) {
         return $job->employment === $employment && $job->clientId === null;
@@ -25,9 +23,7 @@ it('can declare dimona with a specific client', function () {
     $employment = TestEmployment::query()->create();
     $clientId = 'test-client';
 
-    $result = Dimona::client($clientId)->declare($employment);
-
-    expect($result)->toBe($employment);
+    Dimona::client($clientId)->declare($employment);
 
     Queue::assertPushed(DeclareDimona::class, function (DeclareDimona $job) use ($employment, $clientId) {
         return $job->employment === $employment && $job->clientId === $clientId;
