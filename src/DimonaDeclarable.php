@@ -5,7 +5,7 @@ namespace Hyperlab\Dimona;
 use Hyperlab\Dimona\Data\DimonaData;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-interface Employment
+interface DimonaDeclarable
 {
     public function dimona_periods(): MorphMany;
 

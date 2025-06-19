@@ -8,13 +8,13 @@ use Hyperlab\Dimona\Jobs\SyncDimonaDeclaration;
 use Hyperlab\Dimona\Models\DimonaDeclaration;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Tests\Mocks\MockDimonaApiClient;
-use Hyperlab\Dimona\Tests\Models\TestEmployment;
+use Hyperlab\Dimona\Tests\Models\Employment;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {
     // Create a test employment
-    $this->employment = TestEmployment::query()->create();
+    $this->employment = Employment::query()->create();
 
     // Create a dimona period
     $this->dimonaPeriod = DimonaPeriod::create([
@@ -51,20 +51,20 @@ afterEach(function () {
 
 it('can be instantiated', function () {
     $job = new SyncDimonaDeclaration(
-        employment: $this->employment,
+        dimonaDeclarable: $this->employment,
         dimonaDeclaration: $this->dimonaDeclaration,
         clientId: 'test-client'
     );
 
     expect($job)->toBeInstanceOf(SyncDimonaDeclaration::class)
-        ->and($job->employment)->toBe($this->employment)
+        ->and($job->dimonaDeclarable)->toBe($this->employment)
         ->and($job->dimonaDeclaration)->toBe($this->dimonaDeclaration)
         ->and($job->clientId)->toBe('test-client');
 });
 
 it('returns the declaration id as unique id', function () {
     $job = new SyncDimonaDeclaration(
-        employment: $this->employment,
+        dimonaDeclarable: $this->employment,
         dimonaDeclaration: $this->dimonaDeclaration,
         clientId: 'test-client'
     );
@@ -78,7 +78,7 @@ it('calculates backoff based on runtime', function () {
     $this->dimonaDeclaration->save();
 
     $job = new SyncDimonaDeclaration(
-        employment: $this->employment,
+        dimonaDeclarable: $this->employment,
         dimonaDeclaration: $this->dimonaDeclaration,
         clientId: 'test-client'
     );
@@ -90,7 +90,7 @@ it('calculates backoff based on runtime', function () {
     $this->dimonaDeclaration->save();
 
     $job = new SyncDimonaDeclaration(
-        employment: $this->employment,
+        dimonaDeclarable: $this->employment,
         dimonaDeclaration: $this->dimonaDeclaration,
         clientId: 'test-client'
     );
@@ -102,7 +102,7 @@ it('calculates backoff based on runtime', function () {
     $this->dimonaDeclaration->save();
 
     $job = new SyncDimonaDeclaration(
-        employment: $this->employment,
+        dimonaDeclarable: $this->employment,
         dimonaDeclaration: $this->dimonaDeclaration,
         clientId: 'test-client'
     );
@@ -116,7 +116,7 @@ it('updates declaration state to Accepted when API returns A result', function (
 
     // Create the job and inject mocks
     $job = new SyncDimonaDeclaration(
-        employment: $this->employment,
+        dimonaDeclarable: $this->employment,
         dimonaDeclaration: $this->dimonaDeclaration,
         clientId: 'test-client'
     );
@@ -140,7 +140,7 @@ it('updates declaration state to AcceptedWithWarning when API returns W result',
 
     // Create the job and inject mocks
     $job = new SyncDimonaDeclaration(
-        employment: $this->employment,
+        dimonaDeclarable: $this->employment,
         dimonaDeclaration: $this->dimonaDeclaration,
         clientId: 'test-client'
     );
@@ -164,7 +164,7 @@ it('updates declaration state to Refused when API returns B result', function ()
 
     // Create the job and inject mocks
     $job = new SyncDimonaDeclaration(
-        employment: $this->employment,
+        dimonaDeclarable: $this->employment,
         dimonaDeclaration: $this->dimonaDeclaration,
         clientId: 'test-client'
     );
@@ -188,7 +188,7 @@ it('updates declaration state to Waiting when API returns S result', function ()
 
     // Create the job and inject mocks
     $job = new SyncDimonaDeclaration(
-        employment: $this->employment,
+        dimonaDeclarable: $this->employment,
         dimonaDeclaration: $this->dimonaDeclaration,
         clientId: 'test-client'
     );
@@ -209,7 +209,7 @@ it('updates declaration state to Failed when API returns unknown result', functi
 
     // Create the job and inject mocks
     $job = new SyncDimonaDeclaration(
-        employment: $this->employment,
+        dimonaDeclarable: $this->employment,
         dimonaDeclaration: $this->dimonaDeclaration,
         clientId: 'test-client'
     );
@@ -233,7 +233,7 @@ it('releases the job when DimonaDeclarationIsNotYetProcessed exception is thrown
 
     // Create a real job instance
     $job = new SyncDimonaDeclaration(
-        employment: $this->employment,
+        dimonaDeclarable: $this->employment,
         dimonaDeclaration: $this->dimonaDeclaration,
         clientId: 'test-client'
     );
@@ -255,7 +255,7 @@ it('releases the job when DimonaServiceIsDown exception is thrown', function () 
 
     // Create a real job instance
     $job = new SyncDimonaDeclaration(
-        employment: $this->employment,
+        dimonaDeclarable: $this->employment,
         dimonaDeclaration: $this->dimonaDeclaration,
         clientId: 'test-client'
     );
@@ -277,7 +277,7 @@ it('updates declaration state to Failed when RequestException is thrown', functi
 
     // Create the job and inject mocks
     $job = new SyncDimonaDeclaration(
-        employment: $this->employment,
+        dimonaDeclarable: $this->employment,
         dimonaDeclaration: $this->dimonaDeclaration,
         clientId: 'test-client'
     );

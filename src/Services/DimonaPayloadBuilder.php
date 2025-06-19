@@ -3,27 +3,17 @@
 namespace Hyperlab\Dimona\Services;
 
 use Hyperlab\Dimona\Data\DimonaData;
-use Hyperlab\Dimona\Employment;
 use Hyperlab\Dimona\Enums\WorkerType;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Illuminate\Support\Str;
 
 class DimonaPayloadBuilder
 {
-    /**
-     * Create a new instance of the DimonaPayloadBuilder.
-     */
     public static function new(): static
     {
         return app(static::class);
     }
 
-    /**
-     * Build a payload for creating a Dimona period.
-     *
-     * @param  Employment  $employment  The employment contract
-     * @return array The payload for the Dimona API
-     */
     public function buildCreatePayload(DimonaData $data): array
     {
         $payload = [
@@ -49,9 +39,7 @@ class DimonaPayloadBuilder
         ];
 
         if ($data->workerType === WorkerType::Student) {
-            $employmentDurationInHours = $data->startsAt->diffInHours($data->endsAt, true);
-
-            $payload['dimonaIn']['plannedHoursNumber'] = ceil($employmentDurationInHours);
+            $payload['dimonaIn']['plannedHoursNumber'] = ceil($data->startsAt->diffInHours($data->endsAt, true));
             $payload['dimonaIn']['studentPlaceOfWork'] = [
                 'name' => $data->location->name,
                 'address' => [
@@ -84,12 +72,6 @@ class DimonaPayloadBuilder
         return $payload;
     }
 
-    /**
-     * Build a payload for updating a Dimona period.
-     *
-     * @param  DimonaPeriod  $dimonaPeriod  The Dimona period to update
-     * @return array The payload for the Dimona API
-     */
     public function buildUpdatePayload(DimonaPeriod $dimonaPeriod, DimonaData $data): array
     {
         $payload = [
@@ -99,8 +81,7 @@ class DimonaPayloadBuilder
         ];
 
         if ($data->workerType === WorkerType::Student) {
-            $employmentDurationInHours = $data->startsAt->diffInHours($data->endsAt, true);
-            $payload['dimonaUpdate']['plannedHoursNumber'] = ceil($employmentDurationInHours);
+            $payload['dimonaUpdate']['plannedHoursNumber'] = ceil($data->startsAt->diffInHours($data->endsAt, true));
         }
 
         $startsAt = $data->startsAt->setTimezone('Europe/Brussels');
@@ -119,12 +100,6 @@ class DimonaPayloadBuilder
         return $payload;
     }
 
-    /**
-     * Build a payload for canceling a Dimona period.
-     *
-     * @param  DimonaPeriod  $dimonaPeriod  The Dimona period to cancel
-     * @return array The payload for the Dimona API
-     */
     public function buildCancelPayload(DimonaPeriod $dimonaPeriod, DimonaData $data): array
     {
         return [

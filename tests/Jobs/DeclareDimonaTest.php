@@ -4,13 +4,14 @@ use Hyperlab\Dimona\Enums\DimonaDeclarationState;
 use Hyperlab\Dimona\Enums\DimonaDeclarationType;
 use Hyperlab\Dimona\Enums\DimonaPeriodState;
 use Hyperlab\Dimona\Enums\WorkerType;
+use Hyperlab\Dimona\Exceptions\TooManyDimonaPeriodsCreated;
 use Hyperlab\Dimona\Jobs\DeclareDimona;
 use Hyperlab\Dimona\Jobs\SyncDimonaDeclaration;
 use Hyperlab\Dimona\Models\DimonaDeclaration;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Services\DimonaApiClient;
 use Hyperlab\Dimona\Tests\Mocks\MockDimonaApiClient;
-use Hyperlab\Dimona\Tests\Models\TestEmployment;
+use Hyperlab\Dimona\Tests\Models\Employment;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
 
@@ -18,7 +19,7 @@ uses(RefreshDatabase::class);
 
 beforeEach(function () {
     // Create a test employment
-    $this->employment = TestEmployment::query()->create();
+    $this->employment = Employment::query()->create();
 
     // Create and register the mock DimonaApiClient
     $this->apiClient = new MockDimonaApiClient;
@@ -32,7 +33,7 @@ it('can be instantiated', function () {
     $job = new DeclareDimona($this->employment);
 
     expect($job)->toBeInstanceOf(DeclareDimona::class)
-        ->and($job->employment)->toBe($this->employment)
+        ->and($job->dimonaDeclarable)->toBe($this->employment)
         ->and($job->clientId)->toBeNull();
 });
 
@@ -41,7 +42,7 @@ it('can be instantiated with a client ID', function () {
     $job = new DeclareDimona($this->employment, $clientId);
 
     expect($job)->toBeInstanceOf(DeclareDimona::class)
-        ->and($job->employment)->toBe($this->employment)
+        ->and($job->dimonaDeclarable)->toBe($this->employment)
         ->and($job->clientId)->toBe($clientId);
 });
 
@@ -55,7 +56,7 @@ it('syncs a dimona period when it should be synced', function () {
     // Create a dimona period with pending state
     $dimonaPeriod = DimonaPeriod::query()->create([
         'model_id' => $this->employment->id,
-        'model_type' => TestEmployment::class,
+        'model_type' => Employment::class,
         'state' => DimonaPeriodState::Pending,
     ]);
 
@@ -75,13 +76,13 @@ it('syncs a dimona period when it should be synced', function () {
 
     // Assert that SyncDimonaDeclaration was dispatched
     Queue::assertPushed(SyncDimonaDeclaration::class, function (SyncDimonaDeclaration $job) use ($dimonaDeclaration) {
-        return $job->employment === $this->employment && $job->dimonaDeclaration->id === $dimonaDeclaration->id;
+        return $job->dimonaDeclarable === $this->employment && $job->dimonaDeclaration->id === $dimonaDeclaration->id;
     });
 });
 
 it('creates a dimona period when it should be created', function () {
     // Create a real employment for this test
-    $employment = TestEmployment::query()->create();
+    $employment = Employment::query()->create();
 
     // Mock the createDeclaration method to return a reference
     $this->apiClient->mockCreateDeclaration('test-reference');
@@ -94,7 +95,7 @@ it('creates a dimona period when it should be created', function () {
 
     // Assert that SyncDimonaDeclaration was dispatched
     Queue::assertPushed(SyncDimonaDeclaration::class, function (SyncDimonaDeclaration $job) use ($employment) {
-        return $job->employment->id === $employment->id &&
+        return $job->dimonaDeclarable->id === $employment->id &&
             $job->dimonaDeclaration->type === DimonaDeclarationType::In &&
             $job->dimonaDeclaration->state === DimonaDeclarationState::Pending;
     });
@@ -102,12 +103,12 @@ it('creates a dimona period when it should be created', function () {
 
 it('cancels a dimona period when it should be cancelled', function () {
     // Create a real employment for this test that should not declare Dimona
-    $employment = TestEmployment::query()->create(['cancelled' => true]);
+    $employment = Employment::query()->create(['cancelled' => true]);
 
     // Create a real DimonaPeriod with accepted state
     DimonaPeriod::query()->create([
         'model_id' => $employment->id,
-        'model_type' => TestEmployment::class,
+        'model_type' => Employment::class,
         'worker_type' => WorkerType::Student,
         'state' => DimonaPeriodState::Accepted,
     ]);
@@ -123,7 +124,7 @@ it('cancels a dimona period when it should be cancelled', function () {
 
     // Assert that SyncDimonaDeclaration was dispatched
     Queue::assertPushed(SyncDimonaDeclaration::class, function (SyncDimonaDeclaration $job) use ($employment) {
-        return $job->employment->id === $employment->id &&
+        return $job->dimonaDeclarable->id === $employment->id &&
             $job->dimonaDeclaration->type === DimonaDeclarationType::Cancel &&
             $job->dimonaDeclaration->state === DimonaDeclarationState::Pending;
     });
@@ -131,7 +132,7 @@ it('cancels a dimona period when it should be cancelled', function () {
 
 it('handles API exceptions when creating a declaration', function () {
     // Create a real employment for this test
-    $employment = TestEmployment::query()->create();
+    $employment = Employment::query()->create();
 
     // Mock a request exception for createDeclaration
     $this->apiClient->mockCreateDeclarationException(['error' => 'test error']);
@@ -144,20 +145,20 @@ it('handles API exceptions when creating a declaration', function () {
 
     // Assert that DeclareDimona was dispatched again
     Queue::assertPushed(DeclareDimona::class, function (DeclareDimona $job) use ($employment) {
-        return $job->employment->id === $employment->id;
+        return $job->dimonaDeclarable->id === $employment->id;
     });
     Queue::assertNotPushed(SyncDimonaDeclaration::class);
 });
 
 it('throws an exception when too many dimona periods are created', function () {
     // Create a real employment for this test
-    $employment = TestEmployment::query()->create();
+    $employment = Employment::query()->create();
 
     // Create 5 real DimonaPeriod instances
     for ($i = 0; $i < 5; $i++) {
         DimonaPeriod::query()->create([
             'model_id' => $employment->id,
-            'model_type' => TestEmployment::class,
+            'model_type' => Employment::class,
             'worker_type' => WorkerType::Student,
             'state' => DimonaPeriodState::Failed,
         ]);
@@ -168,4 +169,4 @@ it('throws an exception when too many dimona periods are created', function () {
 
     // Call the handle method
     $job->handle();
-})->throws(Exception::class, 'Too many dimona periods created for employment.');
+})->throws(TooManyDimonaPeriodsCreated::class);

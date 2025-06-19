@@ -5,7 +5,7 @@ namespace Hyperlab\Dimona;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-trait HasDimona
+trait HasDimonaPeriods
 {
     public function dimona_periods(): MorphMany
     {

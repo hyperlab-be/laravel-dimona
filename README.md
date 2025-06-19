@@ -113,17 +113,17 @@ For multiple clients, you can configure them in the `config/dimona.php` file:
 
 ### Basic Usage
 
-To use Dimona with your models, implement the `EmploymentContract` interface and use the `HasDimona` trait:
+To use Dimona with your models, implement the `DimonaDeclarable` interface and use the `HasDimonaPeriods` trait:
 
 ```php
-use Hyperlab\Dimona\Employment;
-use Hyperlab\Dimona\HasDimona;
+use Hyperlab\Dimona\DimonaDeclarable;
+use Hyperlab\Dimona\HasDimonaPeriods;
 use Hyperlab\Dimona\Data\DimonaData;
 use Hyperlab\Dimona\Data\DimonaLocationData;
 
-class Employment extends Model implements Employment
+class Employment extends Model implements DimonaDeclarable
 {
-    use HasDimona;
+    use HasDimonaPeriods;
 
     public function shouldDeclareDimona(): bool
     {

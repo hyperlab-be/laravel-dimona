@@ -4,17 +4,17 @@ namespace Hyperlab\Dimona\Tests\Models;
 
 use Hyperlab\Dimona\Data\DimonaData;
 use Hyperlab\Dimona\Data\DimonaLocationData;
-use Hyperlab\Dimona\Employment;
+use Hyperlab\Dimona\DimonaDeclarable;
 use Hyperlab\Dimona\Enums\Country;
 use Hyperlab\Dimona\Enums\WorkerType;
-use Hyperlab\Dimona\HasDimona;
+use Hyperlab\Dimona\HasDimonaPeriods;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
-class TestEmployment extends Model implements Employment
+class Employment extends Model implements DimonaDeclarable
 {
-    use HasDimona, HasUlids;
+    use HasDimonaPeriods, HasUlids;
 
     protected $guarded = [];
 

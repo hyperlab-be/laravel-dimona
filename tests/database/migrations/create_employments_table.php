@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up()
     {
-        Schema::create('test_employments', function (Blueprint $table) {
+        Schema::create('employments', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->boolean('cancelled')->default(false);
             $table->timestamps();
@@ -17,6 +17,6 @@ return new class extends Migration
 
     public function down()
     {
-        Schema::dropIfExists('test_employments');
+        Schema::dropIfExists('employments');
     }
 };

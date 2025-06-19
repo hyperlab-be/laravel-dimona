@@ -3,11 +3,11 @@
 namespace Hyperlab\Dimona\Jobs;
 
 use Hyperlab\Dimona\Actions\DimonaPeriod\CreateDimonaPeriod;
-use Hyperlab\Dimona\Employment;
+use Hyperlab\Dimona\DimonaDeclarable;
 use Hyperlab\Dimona\Enums\DimonaDeclarationState;
 use Hyperlab\Dimona\Enums\DimonaDeclarationType;
 use Hyperlab\Dimona\Enums\DimonaPeriodState;
-use Hyperlab\Dimona\Exceptions\TooManyDimonaPeriodsCreatedForEmployment;
+use Hyperlab\Dimona\Exceptions\TooManyDimonaPeriodsCreated;
 use Hyperlab\Dimona\Models\DimonaDeclaration;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Services\DimonaApiClient;
@@ -31,7 +31,7 @@ class DeclareDimona implements ShouldBeUnique, ShouldQueue
     private DimonaPayloadBuilder $payloadBuilder;
 
     public function __construct(
-        public Employment $employment,
+        public DimonaDeclarable $dimonaDeclarable,
         public ?string $clientId = null,
     ) {
         $this->apiClient = DimonaApiClient::new($this->clientId);
@@ -40,12 +40,12 @@ class DeclareDimona implements ShouldBeUnique, ShouldQueue
 
     public function uniqueId(): string
     {
-        return $this->employment->id;
+        return $this->dimonaDeclarable->id;
     }
 
     public function handle(): void
     {
-        $dimonaPeriod = $this->employment->dimona_periods()->latest()->first();
+        $dimonaPeriod = $this->dimonaDeclarable->dimona_periods()->latest()->first();
 
         match (true) {
             $this->dimonaPeriodShouldBeSynced($dimonaPeriod) => $this->syncDimonaPeriod($dimonaPeriod),
@@ -67,11 +67,11 @@ class DeclareDimona implements ShouldBeUnique, ShouldQueue
 
     private function dimonaPeriodShouldBeCreated(?DimonaPeriod $dimonaPeriod): bool
     {
-        if ($this->employment->dimona_periods()->count() >= self::MAX_DIMONA_PERIODS) {
-            throw new TooManyDimonaPeriodsCreatedForEmployment;
+        if ($this->dimonaDeclarable->dimona_periods()->count() >= self::MAX_DIMONA_PERIODS) {
+            throw new TooManyDimonaPeriodsCreated;
         }
 
-        if (! $this->employment->shouldDeclareDimona()) {
+        if (! $this->dimonaDeclarable->shouldDeclareDimona()) {
             return false;
         }
 
@@ -106,7 +106,7 @@ class DeclareDimona implements ShouldBeUnique, ShouldQueue
             return true;
         }
 
-        if (! $this->employment->shouldDeclareDimona()) {
+        if (! $this->dimonaDeclarable->shouldDeclareDimona()) {
             return true;
         }
 
@@ -117,55 +117,55 @@ class DeclareDimona implements ShouldBeUnique, ShouldQueue
     {
         $dimonaDeclaration = $dimonaPeriod->dimona_declarations()->latest()->first();
 
-        SyncDimonaDeclaration::dispatch($this->employment, $dimonaDeclaration, $this->clientId);
+        SyncDimonaDeclaration::dispatch($this->dimonaDeclarable, $dimonaDeclaration, $this->clientId);
     }
 
     private function createDimonaPeriod(): void
     {
-        $data = $this->employment->getDimonaData();
+        $data = $this->dimonaDeclarable->getDimonaData();
 
         $data->workerType = WorkerTypeExceptionService::new()->resolveWorkerType($data);
 
-        $dimonaPeriod = CreateDimonaPeriod::new()->execute($this->employment, $data->workerType);
+        $dimonaPeriod = CreateDimonaPeriod::new()->execute($this->dimonaDeclarable, $data->workerType);
 
         $payload = $this->payloadBuilder->buildCreatePayload($data);
 
         $dimonaDeclaration = $this->createDimonaDeclaration($dimonaPeriod, DimonaDeclarationType::In, $payload);
 
         if ($dimonaDeclaration->state === DimonaDeclarationState::Pending) {
-            SyncDimonaDeclaration::dispatch($this->employment, $dimonaDeclaration, $this->clientId)->delay(5);
+            SyncDimonaDeclaration::dispatch($this->dimonaDeclarable, $dimonaDeclaration, $this->clientId)->delay(5);
         } else {
-            self::dispatch($this->employment, $this->clientId);
+            self::dispatch($this->dimonaDeclarable, $this->clientId);
         }
     }
 
     private function updateDimonaPeriod(DimonaPeriod $dimonaPeriod): void
     {
-        $data = $this->employment->getDimonaData();
+        $data = $this->dimonaDeclarable->getDimonaData();
 
         $payload = $this->payloadBuilder->buildUpdatePayload($dimonaPeriod, $data);
 
         $dimonaDeclaration = $this->createDimonaDeclaration($dimonaPeriod, DimonaDeclarationType::Update, $payload);
 
         if ($dimonaDeclaration->state === DimonaDeclarationState::Pending) {
-            SyncDimonaDeclaration::dispatch($this->employment, $dimonaDeclaration, $this->clientId)->delay(5);
+            SyncDimonaDeclaration::dispatch($this->dimonaDeclarable, $dimonaDeclaration, $this->clientId)->delay(5);
         } else {
-            self::dispatch($this->employment, $this->clientId);
+            self::dispatch($this->dimonaDeclarable, $this->clientId);
         }
     }
 
     private function cancelDimonaPeriod(DimonaPeriod $dimonaPeriod): void
     {
-        $data = $this->employment->getDimonaData();
+        $data = $this->dimonaDeclarable->getDimonaData();
 
         $payload = $this->payloadBuilder->buildCancelPayload($dimonaPeriod, $data);
 
         $dimonaDeclaration = $this->createDimonaDeclaration($dimonaPeriod, DimonaDeclarationType::Cancel, $payload);
 
         if ($dimonaDeclaration->state === DimonaDeclarationState::Pending) {
-            SyncDimonaDeclaration::dispatch($this->employment, $dimonaDeclaration, $this->clientId)->delay(5);
+            SyncDimonaDeclaration::dispatch($this->dimonaDeclarable, $dimonaDeclaration, $this->clientId)->delay(5);
         } else {
-            self::dispatch($this->employment, $this->clientId);
+            self::dispatch($this->dimonaDeclarable, $this->clientId);
         }
     }
 

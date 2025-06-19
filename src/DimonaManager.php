@@ -29,10 +29,10 @@ class DimonaManager
     }
 
     /**
-     * Declare a Dimona period for an employment contract.
+     * Declare a Dimona period.
      */
-    public function declare(Employment $employment): void
+    public function declare(DimonaDeclarable $dimonaDeclarable): void
     {
-        DeclareDimona::dispatch($employment, $this->clientId);
+        DeclareDimona::dispatch($dimonaDeclarable, $this->clientId);
     }
 }

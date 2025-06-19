@@ -2,7 +2,7 @@
 
 namespace Hyperlab\Dimona\Jobs;
 
-use Hyperlab\Dimona\Employment;
+use Hyperlab\Dimona\DimonaDeclarable;
 use Hyperlab\Dimona\Enums\DimonaDeclarationState;
 use Hyperlab\Dimona\Exceptions\DimonaDeclarationIsNotYetProcessed;
 use Hyperlab\Dimona\Exceptions\DimonaServiceIsDown;
@@ -29,7 +29,7 @@ class SyncDimonaDeclaration implements ShouldBeUnique, ShouldQueue
     private WorkerTypeExceptionService $workerTypeExceptionService;
 
     public function __construct(
-        public Employment $employment,
+        public DimonaDeclarable $dimonaDeclarable,
         public DimonaDeclaration $dimonaDeclaration,
         public ?string $clientId = null,
     ) {
@@ -54,7 +54,7 @@ class SyncDimonaDeclaration implements ShouldBeUnique, ShouldQueue
 
         $this->handleWorkerTypeExceptions();
 
-        Dimona::client($this->clientId)->declare($this->employment);
+        Dimona::client($this->clientId)->declare($this->dimonaDeclarable);
     }
 
     private function syncDimonaDeclaration(): void
@@ -92,7 +92,7 @@ class SyncDimonaDeclaration implements ShouldBeUnique, ShouldQueue
 
     private function handleWorkerTypeExceptions(): void
     {
-        $data = $this->employment->getDimonaData();
+        $data = $this->dimonaDeclarable->getDimonaData();
 
         $this->workerTypeExceptionService->handleExceptions($this->dimonaDeclaration, $data);
     }

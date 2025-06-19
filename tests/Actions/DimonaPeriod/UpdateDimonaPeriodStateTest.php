@@ -8,7 +8,7 @@ use Hyperlab\Dimona\Events\DimonaPeriodAccepted;
 use Hyperlab\Dimona\Events\DimonaPeriodCancelled;
 use Hyperlab\Dimona\Models\DimonaDeclaration;
 use Hyperlab\Dimona\Models\DimonaPeriod;
-use Hyperlab\Dimona\Tests\Models\TestEmployment;
+use Hyperlab\Dimona\Tests\Models\Employment;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
 
@@ -16,12 +16,12 @@ uses(RefreshDatabase::class);
 
 beforeEach(function () {
     // Create a test employment
-    $this->employment = TestEmployment::query()->create();
+    $this->employment = Employment::query()->create();
 
     // Create a dimona period
     $this->dimonaPeriod = DimonaPeriod::query()->create([
         'model_id' => $this->employment->id,
-        'model_type' => TestEmployment::class,
+        'model_type' => Employment::class,
         'state' => DimonaPeriodState::New,
     ]);
 });

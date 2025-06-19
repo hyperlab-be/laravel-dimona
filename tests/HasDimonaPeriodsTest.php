@@ -1,14 +1,14 @@
 <?php
 
 use Hyperlab\Dimona\Models\DimonaPeriod;
-use Hyperlab\Dimona\Tests\Models\TestEmployment;
+use Hyperlab\Dimona\Tests\Models\Employment;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
 it('has a relationship to dimona periods', function () {
-    $employment = TestEmployment::query()->create();
+    $employment = Employment::query()->create();
     $relationship = $employment->dimona_periods();
 
     expect($relationship)->toBeInstanceOf(MorphMany::class);
@@ -18,12 +18,12 @@ it('has a relationship to dimona periods', function () {
 });
 
 it('only returns dimona periods for the current model type', function () {
-    $employment = TestEmployment::query()->create();
+    $employment = Employment::query()->create();
 
     // Create a DimonaPeriod for this employment
     $period = DimonaPeriod::query()->create([
         'model_id' => $employment->id,
-        'model_type' => TestEmployment::class,
+        'model_type' => Employment::class,
         'state' => 'pending',
     ]);
 
