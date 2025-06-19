@@ -3,8 +3,8 @@
 namespace Hyperlab\Dimona\Models;
 
 use Hyperlab\Dimona\Actions\DimonaDeclaration\CreateDimonaDeclaration;
-use Hyperlab\Dimona\Actions\DimonaPeriod\ComputeDimonaPeriodState;
 use Hyperlab\Dimona\Actions\DimonaPeriod\UpdateDimonaPeriodReference;
+use Hyperlab\Dimona\Actions\DimonaPeriod\UpdateDimonaPeriodState;
 use Hyperlab\Dimona\Enums\DimonaDeclarationType;
 use Hyperlab\Dimona\Enums\DimonaPeriodState;
 use Hyperlab\Dimona\Enums\WorkerType;
@@ -28,9 +28,9 @@ class DimonaPeriod extends Model
         return $this->hasMany(DimonaDeclaration::class);
     }
 
-    public function computeState(): self
+    public function updateState(): self
     {
-        return ComputeDimonaPeriodState::new()->execute(
+        return UpdateDimonaPeriodState::new()->execute(
             dimonaPeriod: $this
         );
     }

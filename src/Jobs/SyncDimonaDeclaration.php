@@ -87,7 +87,7 @@ class SyncDimonaDeclaration implements ShouldBeUnique, ShouldQueue
             );
         }
 
-        $this->dimonaDeclaration->dimona_period->computeState();
+        $this->dimonaDeclaration->dimona_period->updateState();
     }
 
     private function handleWorkerTypeExceptions(): void

@@ -186,7 +186,7 @@ class DeclareDimona implements ShouldBeUnique, ShouldQueue
                 anomalies: $exception->response->json(),
             );
         } finally {
-            $dimonaPeriod->computeState();
+            $dimonaPeriod->updateState();
         }
 
         return $dimonaDeclaration;

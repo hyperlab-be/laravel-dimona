@@ -5,6 +5,7 @@ namespace Hyperlab\Dimona\Actions\DimonaPeriod;
 use Hyperlab\Dimona\Employment;
 use Hyperlab\Dimona\Enums\DimonaPeriodState;
 use Hyperlab\Dimona\Enums\WorkerType;
+use Hyperlab\Dimona\Events\DimonaPeriodCreated;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Illuminate\Support\Facades\DB;
 
@@ -23,7 +24,7 @@ class CreateDimonaPeriod
                 'state' => DimonaPeriodState::New,
             ]);
 
-            // TODO: fire event DimonaPeriodCreated
+            event(new DimonaPeriodCreated($dimonaPeriod));
 
             return $dimonaPeriod;
         });

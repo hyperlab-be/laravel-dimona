@@ -1,13 +1,16 @@
 <?php
 
-use Hyperlab\Dimona\Actions\DimonaPeriod\ComputeDimonaPeriodState;
+use Hyperlab\Dimona\Actions\DimonaPeriod\UpdateDimonaPeriodState;
 use Hyperlab\Dimona\Enums\DimonaDeclarationState;
 use Hyperlab\Dimona\Enums\DimonaDeclarationType;
 use Hyperlab\Dimona\Enums\DimonaPeriodState;
+use Hyperlab\Dimona\Events\DimonaPeriodAccepted;
+use Hyperlab\Dimona\Events\DimonaPeriodCancelled;
 use Hyperlab\Dimona\Models\DimonaDeclaration;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Tests\Models\TestEmployment;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 
 uses(RefreshDatabase::class);
 
@@ -23,9 +26,9 @@ beforeEach(function () {
     ]);
 });
 
-it('returns the dimona period unchanged when no state is computed', function () {
+it('returns the dimona period unchanged when no state is updated', function () {
     // Execute the action
-    $result = ComputeDimonaPeriodState::new()->execute($this->dimonaPeriod);
+    $result = UpdateDimonaPeriodState::new()->execute($this->dimonaPeriod);
 
     // Assert that the dimona period is returned unchanged
     expect($result->id)->toBe($this->dimonaPeriod->id)
@@ -42,7 +45,7 @@ it('sets the state to pending when the last declaration is pending', function ()
     ]);
 
     // Execute the action
-    $result = ComputeDimonaPeriodState::new()->execute($this->dimonaPeriod);
+    $result = UpdateDimonaPeriodState::new()->execute($this->dimonaPeriod);
 
     // Assert that the state is set to pending
     expect($result->state)->toBe(DimonaPeriodState::Pending);
@@ -58,7 +61,7 @@ it('sets the state to accepted when an in declaration is accepted', function () 
     ]);
 
     // Execute the action
-    $result = ComputeDimonaPeriodState::new()->execute($this->dimonaPeriod);
+    $result = UpdateDimonaPeriodState::new()->execute($this->dimonaPeriod);
 
     // Assert that the state is set to accepted
     expect($result->state)->toBe(DimonaPeriodState::Accepted);
@@ -75,7 +78,7 @@ it('sets the state to accepted with warning when an in declaration is accepted w
     ]);
 
     // Execute the action
-    $result = ComputeDimonaPeriodState::new()->execute($this->dimonaPeriod);
+    $result = UpdateDimonaPeriodState::new()->execute($this->dimonaPeriod);
 
     // Assert that the state is set to accepted with warning
     expect($result->state)->toBe(DimonaPeriodState::AcceptedWithWarning);
@@ -92,7 +95,7 @@ it('sets the state to accepted when an in declaration is accepted with warning b
     ]);
 
     // Execute the action
-    $result = ComputeDimonaPeriodState::new()->execute($this->dimonaPeriod);
+    $result = UpdateDimonaPeriodState::new()->execute($this->dimonaPeriod);
 
     // Assert that the state is set to accepted
     expect($result->state)->toBe(DimonaPeriodState::Accepted);
@@ -108,7 +111,7 @@ it('sets the state to refused when an in declaration is refused', function () {
     ]);
 
     // Execute the action
-    $result = ComputeDimonaPeriodState::new()->execute($this->dimonaPeriod);
+    $result = UpdateDimonaPeriodState::new()->execute($this->dimonaPeriod);
 
     // Assert that the state is set to refused
     expect($result->state)->toBe(DimonaPeriodState::Refused);
@@ -124,7 +127,7 @@ it('sets the state to waiting when an in declaration is waiting', function () {
     ]);
 
     // Execute the action
-    $result = ComputeDimonaPeriodState::new()->execute($this->dimonaPeriod);
+    $result = UpdateDimonaPeriodState::new()->execute($this->dimonaPeriod);
 
     // Assert that the state is set to waiting
     expect($result->state)->toBe(DimonaPeriodState::Waiting);
@@ -140,7 +143,7 @@ it('sets the state to cancelled when a cancel declaration is accepted', function
     ]);
 
     // Execute the action
-    $result = ComputeDimonaPeriodState::new()->execute($this->dimonaPeriod);
+    $result = UpdateDimonaPeriodState::new()->execute($this->dimonaPeriod);
 
     // Assert that the state is set to cancelled
     expect($result->state)->toBe(DimonaPeriodState::Cancelled);
@@ -157,7 +160,7 @@ it('sets the state to cancelled when a cancel declaration is refused but already
     ]);
 
     // Execute the action
-    $result = ComputeDimonaPeriodState::new()->execute($this->dimonaPeriod);
+    $result = UpdateDimonaPeriodState::new()->execute($this->dimonaPeriod);
 
     // Assert that the state is set to cancelled
     expect($result->state)->toBe(DimonaPeriodState::Cancelled);
@@ -182,7 +185,7 @@ it('maintains the state when a cancel declaration is refused and not already can
     ]);
 
     // Execute the action
-    $result = ComputeDimonaPeriodState::new()->execute($this->dimonaPeriod);
+    $result = UpdateDimonaPeriodState::new()->execute($this->dimonaPeriod);
 
     // Assert that the state is still accepted
     expect($result->state)->toBe(DimonaPeriodState::Accepted);
@@ -217,8 +220,73 @@ it('processes declarations in chronological order', function () {
     ]);
 
     // Execute the action
-    $result = ComputeDimonaPeriodState::new()->execute($this->dimonaPeriod);
+    $result = UpdateDimonaPeriodState::new()->execute($this->dimonaPeriod);
 
     // Assert that the state is pending (because the last declaration is pending)
     expect($result->state)->toBe(DimonaPeriodState::Pending);
+});
+
+it('fires DimonaPeriodAccepted event when state changes to Accepted', function () {
+    // Fake events
+    Event::fake();
+
+    // Create an accepted in declaration
+    DimonaDeclaration::query()->create([
+        'dimona_period_id' => $this->dimonaPeriod->id,
+        'type' => DimonaDeclarationType::In,
+        'state' => DimonaDeclarationState::Accepted,
+        'payload' => [],
+    ]);
+
+    // Execute the action
+    UpdateDimonaPeriodState::new()->execute($this->dimonaPeriod);
+
+    // Assert that the DimonaPeriodAccepted event was dispatched
+    Event::assertDispatched(DimonaPeriodAccepted::class, function ($event) {
+        return $event->dimonaPeriod->id === $this->dimonaPeriod->id;
+    });
+});
+
+it('fires DimonaPeriodCancelled event when state changes to Cancelled', function () {
+    // Fake events
+    Event::fake();
+
+    // Create an accepted cancel declaration
+    DimonaDeclaration::query()->create([
+        'dimona_period_id' => $this->dimonaPeriod->id,
+        'type' => DimonaDeclarationType::Cancel,
+        'state' => DimonaDeclarationState::Accepted,
+        'payload' => [],
+    ]);
+
+    // Execute the action
+    UpdateDimonaPeriodState::new()->execute($this->dimonaPeriod);
+
+    // Assert that the DimonaPeriodCancelled event was dispatched
+    Event::assertDispatched(DimonaPeriodCancelled::class, function ($event) {
+        return $event->dimonaPeriod->id === $this->dimonaPeriod->id;
+    });
+});
+
+it('does not fire events when state remains the same', function () {
+    // First change the state to Accepted
+    $this->dimonaPeriod->update(['state' => DimonaPeriodState::Accepted]);
+
+    // Create an accepted in declaration
+    DimonaDeclaration::query()->create([
+        'dimona_period_id' => $this->dimonaPeriod->id,
+        'type' => DimonaDeclarationType::In,
+        'state' => DimonaDeclarationState::Accepted,
+        'payload' => [],
+    ]);
+
+    // Fake events
+    Event::fake();
+
+    // Execute the action again (state should remain Accepted)
+    UpdateDimonaPeriodState::new()->execute($this->dimonaPeriod);
+
+    // Assert that no events were dispatched
+    Event::assertNotDispatched(DimonaPeriodAccepted::class);
+    Event::assertNotDispatched(DimonaPeriodCancelled::class);
 });

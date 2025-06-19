@@ -149,6 +149,52 @@ Dimona::declare($employment);
 Dimona::client('default')->declare($employment);
 ```
 
+## Events
+
+This package dispatches the following events:
+
+### DimonaPeriodCreated
+
+This event is dispatched when a new DimonaPeriod is created.
+
+```php
+use Hyperlab\Dimona\Events\DimonaPeriodCreated;
+
+// Listen for the event
+Event::listen(function (DimonaPeriodCreated $event) {
+    $dimonaPeriod = $event->dimonaPeriod;
+    // Your code here
+});
+```
+
+### DimonaPeriodAccepted
+
+This event is dispatched when a DimonaPeriod's state is updated to "Accepted".
+
+```php
+use Hyperlab\Dimona\Events\DimonaPeriodAccepted;
+
+// Listen for the event
+Event::listen(function (DimonaPeriodAccepted $event) {
+    $dimonaPeriod = $event->dimonaPeriod;
+    // Your code here
+});
+```
+
+### DimonaPeriodCancelled
+
+This event is dispatched when a DimonaPeriod's state is updated to "Cancelled".
+
+```php
+use Hyperlab\Dimona\Events\DimonaPeriodCancelled;
+
+// Listen for the event
+Event::listen(function (DimonaPeriodCancelled $event) {
+    $dimonaPeriod = $event->dimonaPeriod;
+    // Your code here
+});
+```
+
 ## Testing
 
 ```bash
