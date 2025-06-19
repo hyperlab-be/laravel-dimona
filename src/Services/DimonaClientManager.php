@@ -3,6 +3,7 @@
 namespace Hyperlab\Dimona\Services;
 
 use Exception;
+use Hyperlab\Dimona\Exceptions\DimonaClientNotConfigured;
 use Illuminate\Support\Facades\Config;
 
 class DimonaClientManager
@@ -33,7 +34,7 @@ class DimonaClientManager
         $config = Config::get("dimona.clients.{$clientId}");
 
         if (! $config) {
-            throw new Exception("Dimona client [{$clientId}] is not configured.");
+            throw new DimonaClientNotConfigured($clientId);
         }
 
         return $this->clients[$clientId] = new DimonaApiClient(

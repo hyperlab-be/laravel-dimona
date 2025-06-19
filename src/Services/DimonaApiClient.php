@@ -3,10 +3,12 @@
 namespace Hyperlab\Dimona\Services;
 
 use Carbon\Carbon;
-use Exception;
 use Firebase\JWT\JWT;
 use Hyperlab\Dimona\Exceptions\DimonaDeclarationIsNotYetProcessed;
 use Hyperlab\Dimona\Exceptions\DimonaServiceIsDown;
+use Hyperlab\Dimona\Exceptions\InvalidDimonaApiRequest;
+use Hyperlab\Dimona\Exceptions\InvalidDimonaApiResponse;
+use Hyperlab\Dimona\Exceptions\UnableToRetrieveAuthorizationToken;
 use Illuminate\Http\Client\PendingRequest as HttpClient;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
@@ -43,7 +45,7 @@ class DimonaApiClient
         $reference = Str::after($response->header('Location'), 'declarations/');
 
         if (! $reference) {
-            throw new Exception('Invalid response from Dimona API: missing reference');
+            throw new InvalidDimonaApiResponse;
         }
 
         return [
@@ -67,7 +69,7 @@ class DimonaApiClient
             }
 
             if (in_array($exception->response->status(), [400, 405])) {
-                throw new Exception('Invalid request to Dimona API', 500, $exception);
+                throw new InvalidDimonaApiRequest($exception);
             }
 
             if ($exception->response->serverError()) {
@@ -111,7 +113,7 @@ class DimonaApiClient
             ]);
 
         if (! $response->json('access_token')) {
-            throw new Exception('Unable to retrieve authorization token');
+            throw new UnableToRetrieveAuthorizationToken;
         }
 
         $accessToken = $response->json('access_token');

@@ -2,6 +2,9 @@
 
 use Hyperlab\Dimona\Exceptions\DimonaDeclarationIsNotYetProcessed;
 use Hyperlab\Dimona\Exceptions\DimonaServiceIsDown;
+use Hyperlab\Dimona\Exceptions\InvalidDimonaApiRequest;
+use Hyperlab\Dimona\Exceptions\InvalidDimonaApiResponse;
+use Hyperlab\Dimona\Exceptions\UnableToRetrieveAuthorizationToken;
 use Hyperlab\Dimona\Services\DimonaApiClient;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Cache;
@@ -135,7 +138,7 @@ it('throws an exception when the declaration reference is missing', function () 
 
     $client = new DimonaApiClient($this->clientId, $this->privateKeyPath);
     $client->createDeclaration(['test' => 'payload']);
-})->throws(Exception::class, 'Invalid response from Dimona API: missing reference');
+})->throws(InvalidDimonaApiResponse::class);
 
 it('gets a declaration by reference', function () {
     // Set up the mock responses
@@ -196,7 +199,7 @@ it('throws an exception for invalid requests', function () {
 
     $client = new DimonaApiClient($this->clientId, $this->privateKeyPath);
     $client->getDeclaration('12345');
-})->throws(Exception::class, 'Invalid request to Dimona API');
+})->throws(InvalidDimonaApiRequest::class);
 
 it('throws DimonaServiceIsDown for server errors', function () {
     // Set up the mock responses
@@ -234,3 +237,17 @@ it('uses cached access token when available and not expired', function () {
         return $request->url() === 'https://oauth.dimona.test/token';
     });
 });
+
+it('throws UnableToRetrieveAuthorizationToken when OAuth response does not contain access token', function () {
+    // Set up the mock response without an access token
+    Http::fake([
+        'https://oauth.dimona.test/token' => Http::response([
+            'expires_in' => 3600,
+            // No access_token in the response
+        ]),
+    ]);
+
+    // Call a method that would trigger authentication
+    $client = new DimonaApiClient($this->clientId, $this->privateKeyPath);
+    $client->createDeclaration(['test' => 'payload']);
+})->throws(UnableToRetrieveAuthorizationToken::class);

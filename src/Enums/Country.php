@@ -2,8 +2,8 @@
 
 namespace Hyperlab\Dimona\Enums;
 
-enum Country
+enum Country: string
 {
-    case Belgium;
-    case Netherlands;
+    case Belgium = 'be';
+    case Netherlands = 'nl';
 }

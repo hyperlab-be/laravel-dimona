@@ -2,9 +2,9 @@
 
 namespace Hyperlab\Dimona\Enums;
 
-enum WorkerType
+enum WorkerType: string
 {
-    case Student;
-    case Flexi;
-    case Other;
+    case Student = 'student';
+    case Flexi = 'flexi';
+    case Other = 'other';
 }

@@ -2,12 +2,12 @@
 
 namespace Hyperlab\Dimona\Jobs;
 
-use Exception;
 use Hyperlab\Dimona\Actions\DimonaPeriod\CreateDimonaPeriod;
 use Hyperlab\Dimona\Employment;
 use Hyperlab\Dimona\Enums\DimonaDeclarationState;
 use Hyperlab\Dimona\Enums\DimonaDeclarationType;
 use Hyperlab\Dimona\Enums\DimonaPeriodState;
+use Hyperlab\Dimona\Exceptions\TooManyDimonaPeriodsCreatedForEmployment;
 use Hyperlab\Dimona\Models\DimonaDeclaration;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Services\DimonaApiClient;
@@ -68,7 +68,7 @@ class DeclareDimona implements ShouldBeUnique, ShouldQueue
     private function dimonaPeriodShouldBeCreated(?DimonaPeriod $dimonaPeriod): bool
     {
         if ($this->employment->dimona_periods()->count() >= self::MAX_DIMONA_PERIODS) {
-            throw new Exception('Too many dimona periods created for employment.', 500);
+            throw new TooManyDimonaPeriodsCreatedForEmployment;
         }
 
         if (! $this->employment->shouldDeclareDimona()) {
