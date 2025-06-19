@@ -113,7 +113,7 @@ For multiple clients, you can configure them in the `config/dimona.php` file:
 
 ### Basic Usage
 
-To use Dimona with your models, implement the `DimonaDeclarable` interface and use the `HasDimonaPeriods` trait:
+Implement the `DimonaDeclarable` interface and use the `HasDimonaPeriods` trait in your model:
 
 ```php
 use Hyperlab\Dimona\DimonaDeclarable;
@@ -139,7 +139,7 @@ class Employment extends Model implements DimonaDeclarable
 }
 ```
 
-Then you can use the methods provided by the trait:
+Then, pass a model instance to the `Dimona` facade to declare a Dimona:
 
 ```php
 // Declare a Dimona
