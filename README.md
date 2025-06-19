@@ -155,6 +155,27 @@ Dimona::client('default')->declare($employment);
 composer test
 ```
 
+### Mocking the Dimona API
+
+For testing code that interacts with the Dimona API, you can use the `MockDimonaApiClient` class:
+
+```php
+use Hyperlab\Dimona\Tests\Mocks\MockDimonaApiClient;
+
+// Create a mock client
+$mock = new MockDimonaApiClient();
+
+// Mock responses
+$mock
+    ->mockCreateDeclaration('test-reference')
+    ->mockGetDeclaration('test-reference', 'A')
+    ->register();
+
+// Now any code that uses DimonaApiClient will use your mock
+```
+
+See the [mock documentation](tests/Mocks/README.md) for more details.
+
 ## Changelog
 
 Please see [CHANGELOG](CHANGELOG.md) for more information on what has changed recently.
