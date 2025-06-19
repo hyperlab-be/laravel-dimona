@@ -19,7 +19,7 @@ it('resolves worker type to Other when exception exists for Flexi worker', funct
     // Create an exception in the database
     DimonaWorkerTypeException::create([
         'social_security_number' => '12345678901',
-        'type' => WorkerType::Flexi,
+        'worker_type' => WorkerType::Flexi,
         'starts_at' => $startsAt->copy()->startOfDay(),
         'ends_at' => $startsAt->copy()->endOfDay(),
     ]);
@@ -59,7 +59,7 @@ it('resolves worker type to Other when exception exists for Student worker', fun
     // Create an exception in the database
     DimonaWorkerTypeException::create([
         'social_security_number' => '12345678901',
-        'type' => WorkerType::Student,
+        'worker_type' => WorkerType::Student,
         'starts_at' => $startsAt->copy()->startOfDay(),
         'ends_at' => $startsAt->copy()->endOfDay(),
     ]);
@@ -224,11 +224,11 @@ it('creates a flexi exception when flexi requirements are not met', function () 
 
     // Assert
     $exception = DimonaWorkerTypeException::where('social_security_number', '12345678905')
-        ->where('type', WorkerType::Flexi)
+        ->where('worker_type', WorkerType::Flexi)
         ->first();
 
     expect($exception)->not->toBeNull()
-        ->and($exception->type)->toBe(WorkerType::Flexi)
+        ->and($exception->worker_type)->toBe(WorkerType::Flexi)
         ->and($exception->social_security_number)->toBe('12345678905')
         ->and($exception->starts_at->format('Y-m-d'))->toBe('2023-01-01')
         ->and($exception->ends_at->format('Y-m-d'))->toBe('2023-03-31');
@@ -268,11 +268,11 @@ it('creates a student exception when student requirements are not met', function
 
     // Assert
     $exception = DimonaWorkerTypeException::where('social_security_number', '12345678906')
-        ->where('type', WorkerType::Student)
+        ->where('worker_type', WorkerType::Student)
         ->first();
 
     expect($exception)->not->toBeNull()
-        ->and($exception->type)->toBe(WorkerType::Student)
+        ->and($exception->worker_type)->toBe(WorkerType::Student)
         ->and($exception->social_security_number)->toBe('12345678906')
         ->and($exception->starts_at->format('Y-m-d'))->toBe('2023-01-01')
         ->and($exception->ends_at->format('Y-m-d'))->toBe('2023-12-31');

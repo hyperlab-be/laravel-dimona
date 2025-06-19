@@ -13,7 +13,7 @@ class DimonaWorkerTypeException extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'type' => WorkerType::class,
+        'worker_type' => WorkerType::class,
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
     ];

@@ -25,7 +25,7 @@ class WorkerTypeExceptionService
                 ->where('social_security_number', $data->workerSocialSecurityNumber)
                 ->where('starts_at', '<=', $data->startsAt)
                 ->where('ends_at', '>=', $data->startsAt)
-                ->where('type', $data->workerType)
+                ->where('worker_type', $data->workerType)
                 ->exists();
 
             return $exceptionExists ? WorkerType::Other : $data->workerType;
@@ -55,7 +55,7 @@ class WorkerTypeExceptionService
     {
         return DimonaWorkerTypeException::query()->create([
             'social_security_number' => $socialSecurityNumber,
-            'type' => WorkerType::Flexi,
+            'worker_type' => WorkerType::Flexi,
             'starts_at' => $startsAt->clone()->startOfQuarter(),
             'ends_at' => $startsAt->clone()->endOfQuarter(),
         ]);
@@ -68,7 +68,7 @@ class WorkerTypeExceptionService
     {
         return DimonaWorkerTypeException::query()->create([
             'social_security_number' => $socialSecurityNumber,
-            'type' => WorkerType::Student,
+            'worker_type' => WorkerType::Student,
             'starts_at' => $startsAt->clone()->startOfYear(),
             'ends_at' => $startsAt->clone()->endOfYear(),
         ]);

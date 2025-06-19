@@ -19,7 +19,7 @@ return new class extends Migration
 
         Schema::create('dimona_declarations', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('dimona_period_id')->constrained();
+            $table->foreignUlid('dimona_period_id')->constrained()->cascadeOnDelete();
             $table->string('type');
             $table->string('state');
             $table->string('reference')->nullable();
@@ -31,7 +31,7 @@ return new class extends Migration
         Schema::create('dimona_worker_type_exceptions', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->string('social_security_number')->index();
-            $table->string('type');
+            $table->string('worker_type');
             $table->timestamp('starts_at');
             $table->timestamp('ends_at');
             $table->timestamps();
