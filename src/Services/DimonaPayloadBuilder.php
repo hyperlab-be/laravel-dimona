@@ -60,10 +60,10 @@ class DimonaPayloadBuilder
                     'boxNumber' => $data->location->boxNumber,
                     'postCode' => $data->location->postalCode,
                     'municipality' => [
-                        'code' => Nis::new()->getNisCodeForMunicipality($data->location->postalCode),
+                        'code' => NisCodeService::new()->getNisCodeForMunicipality($data->location->postalCode),
                         'name' => $data->location->place,
                     ],
-                    'country' => Nis::new()->getNisCodeForCountry($data->location->country),
+                    'country' => NisCodeService::new()->getNisCodeForCountry($data->location->country),
                 ],
             ];
         }

@@ -3,9 +3,9 @@
 namespace Hyperlab\Dimona;
 
 use Hyperlab\Dimona\Facades\Dimona;
-use Hyperlab\Dimona\Services\DimonaClientManager;
+use Hyperlab\Dimona\Services\DimonaApiClientManager;
 use Hyperlab\Dimona\Services\DimonaPayloadBuilder;
-use Hyperlab\Dimona\Services\Nis;
+use Hyperlab\Dimona\Services\NisCodeService;
 use Hyperlab\Dimona\Services\WorkerTypeExceptionService;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -35,11 +35,11 @@ class DimonaServiceProvider extends PackageServiceProvider
     {
         parent::register();
 
-        $this->app->singleton(DimonaClientManager::class, fn () => new DimonaClientManager);
+        $this->app->singleton(DimonaApiClientManager::class, fn () => new DimonaApiClientManager);
         $this->app->singleton(DimonaPayloadBuilder::class, fn () => new DimonaPayloadBuilder);
-        $this->app->singleton(Nis::class, fn () => new Nis);
+        $this->app->singleton(NisCodeService::class, fn () => new NisCodeService);
         $this->app->singleton(WorkerTypeExceptionService::class, fn () => new WorkerTypeExceptionService);
-        $this->app->singleton(DimonaManager::class, fn ($app) => new DimonaManager($app->make(DimonaClientManager::class)));
+        $this->app->singleton(DimonaManager::class, fn ($app) => new DimonaManager($app->make(DimonaApiClientManager::class)));
         $this->app->alias(DimonaManager::class, Dimona::class);
     }
 
@@ -52,10 +52,10 @@ class DimonaServiceProvider extends PackageServiceProvider
     {
         return [
             Dimona::class,
-            DimonaClientManager::class,
+            DimonaApiClientManager::class,
             DimonaPayloadBuilder::class,
             DimonaManager::class,
-            Nis::class,
+            NisCodeService::class,
             WorkerTypeExceptionService::class,
         ];
     }

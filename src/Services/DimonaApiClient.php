@@ -35,7 +35,7 @@ class DimonaApiClient
 
     public static function new(?string $clientId = null): static
     {
-        return app(DimonaClientManager::class)->client($clientId);
+        return app(DimonaApiClientManager::class)->client($clientId);
     }
 
     public function createDeclaration(array $payload): array

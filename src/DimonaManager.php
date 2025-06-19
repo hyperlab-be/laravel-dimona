@@ -3,7 +3,7 @@
 namespace Hyperlab\Dimona;
 
 use Hyperlab\Dimona\Jobs\DeclareDimona;
-use Hyperlab\Dimona\Services\DimonaClientManager;
+use Hyperlab\Dimona\Services\DimonaApiClientManager;
 
 class DimonaManager
 {
@@ -13,7 +13,7 @@ class DimonaManager
     protected ?string $clientId = null;
 
     public function __construct(
-        protected DimonaClientManager $clientManager
+        protected DimonaApiClientManager $clientManager
     ) {}
 
     /**

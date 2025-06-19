@@ -5,7 +5,7 @@ namespace Hyperlab\Dimona\Services;
 use Exception;
 use Hyperlab\Dimona\Enums\Country;
 
-class Nis
+class NisCodeService
 {
     public static function new(): static
     {

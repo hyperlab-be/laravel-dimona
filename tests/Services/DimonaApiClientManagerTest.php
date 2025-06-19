@@ -1,7 +1,7 @@
 <?php
 
 use Hyperlab\Dimona\Services\DimonaApiClient;
-use Hyperlab\Dimona\Services\DimonaClientManager;
+use Hyperlab\Dimona\Services\DimonaApiClientManager;
 use Illuminate\Support\Facades\Config;
 
 it('returns the default client when no client ID is provided', function () {
@@ -12,7 +12,7 @@ it('returns the default client when no client ID is provided', function () {
         'private_key_path' => 'test-private-key-path',
     ]);
 
-    $manager = new DimonaClientManager;
+    $manager = new DimonaApiClientManager;
     $client = $manager->client();
 
     expect($client)->toBeInstanceOf(DimonaApiClient::class)
@@ -27,7 +27,7 @@ it('returns a specific client when a client ID is provided', function () {
         'private_key_path' => 'specific-private-key-path',
     ]);
 
-    $manager = new DimonaClientManager;
+    $manager = new DimonaApiClientManager;
     $client = $manager->client('specific-client');
 
     expect($client)->toBeInstanceOf(DimonaApiClient::class)
@@ -42,7 +42,7 @@ it('caches clients for subsequent requests', function () {
         'private_key_path' => 'cache-private-key-path',
     ]);
 
-    $manager = new DimonaClientManager;
+    $manager = new DimonaApiClientManager;
     $client1 = $manager->client('cache-client');
     $client2 = $manager->client('cache-client');
 
@@ -51,6 +51,6 @@ it('caches clients for subsequent requests', function () {
 });
 
 it('throws an exception when a client is not configured', function () {
-    $manager = new DimonaClientManager;
+    $manager = new DimonaApiClientManager;
     $manager->client('non-existent-client');
 })->throws(Exception::class, 'Dimona client [non-existent-client] is not configured.');

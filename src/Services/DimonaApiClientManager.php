@@ -6,7 +6,7 @@ use Exception;
 use Hyperlab\Dimona\Exceptions\DimonaClientNotConfigured;
 use Illuminate\Support\Facades\Config;
 
-class DimonaClientManager
+class DimonaApiClientManager
 {
     /**
      * The cached API clients.

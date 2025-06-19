@@ -5,7 +5,7 @@ namespace Hyperlab\Dimona\Tests\Mocks;
 use Hyperlab\Dimona\Exceptions\DimonaDeclarationIsNotYetProcessed;
 use Hyperlab\Dimona\Exceptions\DimonaServiceIsDown;
 use Hyperlab\Dimona\Services\DimonaApiClient;
-use Hyperlab\Dimona\Services\DimonaClientManager;
+use Hyperlab\Dimona\Services\DimonaApiClientManager;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Mockery;
@@ -165,7 +165,7 @@ class MockDimonaApiClient extends DimonaApiClient
      */
     public function register(): self
     {
-        app()->instance(DimonaClientManager::class, Mockery::mock(DimonaClientManager::class)
+        app()->instance(DimonaApiClientManager::class, Mockery::mock(DimonaApiClientManager::class)
             ->shouldReceive('client')
             ->andReturn($this)
             ->getMock());

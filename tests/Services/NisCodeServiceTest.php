@@ -1,17 +1,17 @@
 <?php
 
 use Hyperlab\Dimona\Enums\Country;
-use Hyperlab\Dimona\Services\Nis;
+use Hyperlab\Dimona\Services\NisCodeService;
 
 it('returns the correct NIS code for a country', function () {
-    $nis = new Nis;
+    $nis = new NisCodeService;
 
     expect($nis->getNisCodeForCountry(Country::Belgium))->toBe(150);
     expect($nis->getNisCodeForCountry(Country::Netherlands))->toBe(129);
 });
 
 it('returns the correct NIS code for a municipality', function () {
-    $nis = new Nis;
+    $nis = new NisCodeService;
 
     // Test a few postal codes
     expect($nis->getNisCodeForMunicipality('1000'))->toBe(21004); // Brussels
@@ -21,7 +21,7 @@ it('returns the correct NIS code for a municipality', function () {
 });
 
 it('throws an exception for an unknown postal code', function () {
-    $nis = new Nis;
+    $nis = new NisCodeService;
 
     $nis->getNisCodeForMunicipality('0000');
 })->throws(Exception::class, 'Municipality not found for 0000.');
