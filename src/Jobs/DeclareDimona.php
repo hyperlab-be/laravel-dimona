@@ -18,10 +18,11 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
 
 class DeclareDimona implements ShouldBeUnique, ShouldQueue
 {
-    use InteractsWithQueue, Queueable;
+    use InteractsWithQueue, Queueable, SerializesModels;
 
     private const MAX_DIMONA_PERIODS = 5;
 
@@ -32,10 +33,7 @@ class DeclareDimona implements ShouldBeUnique, ShouldQueue
     public function __construct(
         public DimonaDeclarable $dimonaDeclarable,
         public ?string $clientId = null,
-    ) {
-        $this->apiClient = DimonaApiClient::new($this->clientId);
-        $this->payloadBuilder = DimonaPayloadBuilder::new();
-    }
+    ) {}
 
     public function uniqueId(): string
     {
@@ -44,6 +42,9 @@ class DeclareDimona implements ShouldBeUnique, ShouldQueue
 
     public function handle(): void
     {
+        $this->apiClient = DimonaApiClient::new($this->clientId);
+        $this->payloadBuilder = DimonaPayloadBuilder::new();
+
         $dimonaPeriod = $this->dimonaDeclarable->dimona_periods()->latest()->first();
 
         match (true) {

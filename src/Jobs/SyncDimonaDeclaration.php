@@ -15,11 +15,12 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Carbon;
 
 class SyncDimonaDeclaration implements ShouldBeUnique, ShouldQueue
 {
-    use InteractsWithQueue, Queueable;
+    use InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 0;
 
@@ -31,10 +32,7 @@ class SyncDimonaDeclaration implements ShouldBeUnique, ShouldQueue
         public DimonaDeclarable $dimonaDeclarable,
         public DimonaDeclaration $dimonaDeclaration,
         public ?string $clientId = null,
-    ) {
-        $this->apiClient = DimonaApiClient::new($this->clientId);
-        $this->workerTypeExceptionService = WorkerTypeExceptionService::new();
-    }
+    ) {}
 
     public function uniqueId(): string
     {
@@ -43,6 +41,9 @@ class SyncDimonaDeclaration implements ShouldBeUnique, ShouldQueue
 
     public function handle(): void
     {
+        $this->apiClient = DimonaApiClient::new($this->clientId);
+        $this->workerTypeExceptionService = WorkerTypeExceptionService::new();
+
         try {
             $this->syncDimonaDeclaration();
         } catch (DimonaDeclarationIsNotYetProcessed|DimonaServiceIsDown) {
