@@ -1,12 +1,12 @@
 <?php
 
+use Carbon\CarbonImmutable;
 use Hyperlab\Dimona\Data\DimonaData;
 use Hyperlab\Dimona\Data\DimonaLocationData;
 use Hyperlab\Dimona\Enums\Country;
 use Hyperlab\Dimona\Enums\WorkerType;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Services\DimonaPayloadBuilder;
-use Illuminate\Support\Carbon;
 
 beforeEach(function () {
     $this->builder = new DimonaPayloadBuilder;
@@ -18,8 +18,8 @@ it('builds a create payload for student worker type', function () {
         jointCommissionNumber: 302,
         workerType: WorkerType::Student,
         workerSocialSecurityNumber: '12.34.56-789.10',
-        startsAt: Carbon::parse('2023-01-01 09:00:00'),
-        endsAt: Carbon::parse('2023-01-01 17:00:00'),
+        startsAt: CarbonImmutable::parse('2023-01-01 09:00:00'),
+        endsAt: CarbonImmutable::parse('2023-01-01 17:00:00'),
         location: new DimonaLocationData(
             name: 'Test Location',
             street: 'Test Street',
@@ -58,8 +58,8 @@ it('builds a create payload for flexi worker type', function () {
         jointCommissionNumber: 302,
         workerType: WorkerType::Flexi,
         workerSocialSecurityNumber: '12.34.56-789.10',
-        startsAt: Carbon::parse('2023-01-01 09:00:00'),
-        endsAt: Carbon::parse('2023-01-01 17:00:00'),
+        startsAt: CarbonImmutable::parse('2023-01-01 09:00:00'),
+        endsAt: CarbonImmutable::parse('2023-01-01 17:00:00'),
         location: new DimonaLocationData(
             name: 'Test Location',
             street: 'Test Street',
@@ -92,8 +92,8 @@ it('builds a create payload for other worker type', function () {
         jointCommissionNumber: 200,
         workerType: WorkerType::Other,
         workerSocialSecurityNumber: '12.34.56-789.10',
-        startsAt: Carbon::parse('2023-01-01 09:00:00'),
-        endsAt: Carbon::parse('2023-01-01 17:00:00'),
+        startsAt: CarbonImmutable::parse('2023-01-01 09:00:00'),
+        endsAt: CarbonImmutable::parse('2023-01-01 17:00:00'),
         location: new DimonaLocationData(
             name: 'Test Location',
             street: 'Test Street',
@@ -124,8 +124,8 @@ it('builds an update payload for student worker type', function () {
         jointCommissionNumber: 302,
         workerType: WorkerType::Student,
         workerSocialSecurityNumber: '12.34.56-789.10',
-        startsAt: Carbon::parse('2023-01-01 09:00:00'),
-        endsAt: Carbon::parse('2023-01-01 17:00:00'),
+        startsAt: CarbonImmutable::parse('2023-01-01 09:00:00'),
+        endsAt: CarbonImmutable::parse('2023-01-01 17:00:00'),
         location: new DimonaLocationData(
             name: 'Test Location',
             street: 'Test Street',
@@ -158,8 +158,8 @@ it('builds an update payload for flexi worker type', function () {
         jointCommissionNumber: 302,
         workerType: WorkerType::Flexi,
         workerSocialSecurityNumber: '12.34.56-789.10',
-        startsAt: Carbon::parse('2023-01-01 09:00:00'),
-        endsAt: Carbon::parse('2023-01-01 17:00:00'),
+        startsAt: CarbonImmutable::parse('2023-01-01 09:00:00'),
+        endsAt: CarbonImmutable::parse('2023-01-01 17:00:00'),
         location: new DimonaLocationData(
             name: 'Test Location',
             street: 'Test Street',
@@ -193,8 +193,8 @@ it('builds an update payload for other worker type', function () {
         jointCommissionNumber: 200,
         workerType: WorkerType::Other,
         workerSocialSecurityNumber: '12.34.56-789.10',
-        startsAt: Carbon::parse('2023-01-01 09:00:00'),
-        endsAt: Carbon::parse('2023-01-01 17:00:00'),
+        startsAt: CarbonImmutable::parse('2023-01-01 09:00:00'),
+        endsAt: CarbonImmutable::parse('2023-01-01 17:00:00'),
         location: new DimonaLocationData(
             name: 'Test Location',
             street: 'Test Street',
@@ -226,8 +226,8 @@ it('builds a cancel payload', function () {
         jointCommissionNumber: 302,
         workerType: WorkerType::Student,
         workerSocialSecurityNumber: '12.34.56-789.10',
-        startsAt: Carbon::parse('2023-01-01 09:00:00'),
-        endsAt: Carbon::parse('2023-01-01 17:00:00'),
+        startsAt: CarbonImmutable::parse('2023-01-01 09:00:00'),
+        endsAt: CarbonImmutable::parse('2023-01-01 17:00:00'),
         location: new DimonaLocationData(
             name: 'Test Location',
             street: 'Test Street',

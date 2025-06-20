@@ -2,8 +2,8 @@
 
 namespace Hyperlab\Dimona\Data;
 
+use Carbon\CarbonImmutable;
 use Hyperlab\Dimona\Enums\WorkerType;
-use Illuminate\Support\Carbon;
 
 class DimonaData
 {
@@ -12,8 +12,8 @@ class DimonaData
         public readonly int $jointCommissionNumber,
         public WorkerType $workerType,
         public readonly string $workerSocialSecurityNumber,
-        public readonly Carbon $startsAt,
-        public readonly Carbon $endsAt,
+        public readonly CarbonImmutable $startsAt,
+        public readonly CarbonImmutable $endsAt,
         public readonly DimonaLocationData $location,
     ) {}
 }

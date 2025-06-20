@@ -2,11 +2,11 @@
 
 namespace Hyperlab\Dimona\Services;
 
+use Carbon\CarbonImmutable;
 use Hyperlab\Dimona\Data\DimonaData;
 use Hyperlab\Dimona\Enums\WorkerType;
 use Hyperlab\Dimona\Models\DimonaDeclaration;
 use Hyperlab\Dimona\Models\DimonaWorkerTypeException;
-use Illuminate\Support\Carbon;
 
 class WorkerTypeExceptionService
 {
@@ -51,26 +51,26 @@ class WorkerTypeExceptionService
     /**
      * Create a flexi worker type exception
      */
-    private function createFlexiException(string $socialSecurityNumber, Carbon $startsAt): DimonaWorkerTypeException
+    private function createFlexiException(string $socialSecurityNumber, CarbonImmutable $startsAt): DimonaWorkerTypeException
     {
         return DimonaWorkerTypeException::query()->create([
             'social_security_number' => $socialSecurityNumber,
             'worker_type' => WorkerType::Flexi,
-            'starts_at' => $startsAt->clone()->startOfQuarter(),
-            'ends_at' => $startsAt->clone()->endOfQuarter(),
+            'starts_at' => $startsAt->startOfQuarter(),
+            'ends_at' => $startsAt->endOfQuarter(),
         ]);
     }
 
     /**
      * Create a student worker type exception
      */
-    private function createStudentException(string $socialSecurityNumber, Carbon $startsAt): DimonaWorkerTypeException
+    private function createStudentException(string $socialSecurityNumber, CarbonImmutable $startsAt): DimonaWorkerTypeException
     {
         return DimonaWorkerTypeException::query()->create([
             'social_security_number' => $socialSecurityNumber,
             'worker_type' => WorkerType::Student,
-            'starts_at' => $startsAt->clone()->startOfYear(),
-            'ends_at' => $startsAt->clone()->endOfYear(),
+            'starts_at' => $startsAt->startOfYear(),
+            'ends_at' => $startsAt->endOfYear(),
         ]);
     }
 }

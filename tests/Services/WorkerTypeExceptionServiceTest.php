@@ -1,5 +1,6 @@
 <?php
 
+use Carbon\CarbonImmutable;
 use Hyperlab\Dimona\Data\DimonaData;
 use Hyperlab\Dimona\Data\DimonaLocationData;
 use Hyperlab\Dimona\Enums\Country;
@@ -7,14 +8,13 @@ use Hyperlab\Dimona\Enums\WorkerType;
 use Hyperlab\Dimona\Models\DimonaDeclaration;
 use Hyperlab\Dimona\Models\DimonaWorkerTypeException;
 use Hyperlab\Dimona\Services\WorkerTypeExceptionService;
-use Illuminate\Support\Carbon;
 
 it('resolves worker type to Other when exception exists for Flexi worker', function () {
     // Arrange
     $service = new WorkerTypeExceptionService;
 
-    $startsAt = Carbon::parse('2023-01-15 10:00:00');
-    $endsAt = Carbon::parse('2023-01-15 14:00:00');
+    $startsAt = CarbonImmutable::parse('2023-01-15 10:00:00');
+    $endsAt = CarbonImmutable::parse('2023-01-15 14:00:00');
 
     // Create an exception in the database
     DimonaWorkerTypeException::create([
@@ -53,8 +53,8 @@ it('resolves worker type to Other when exception exists for Student worker', fun
     // Arrange
     $service = new WorkerTypeExceptionService;
 
-    $startsAt = Carbon::parse('2023-01-15 10:00:00');
-    $endsAt = Carbon::parse('2023-01-15 14:00:00');
+    $startsAt = CarbonImmutable::parse('2023-01-15 10:00:00');
+    $endsAt = CarbonImmutable::parse('2023-01-15 14:00:00');
 
     // Create an exception in the database
     DimonaWorkerTypeException::create([
@@ -93,8 +93,8 @@ it('keeps original worker type when no exception exists for Flexi worker', funct
     // Arrange
     $service = new WorkerTypeExceptionService;
 
-    $startsAt = Carbon::parse('2023-01-15 10:00:00');
-    $endsAt = Carbon::parse('2023-01-15 14:00:00');
+    $startsAt = CarbonImmutable::parse('2023-01-15 10:00:00');
+    $endsAt = CarbonImmutable::parse('2023-01-15 14:00:00');
 
     // Make sure no exception exists for this worker
     DimonaWorkerTypeException::where('social_security_number', '12345678902')->delete();
@@ -128,8 +128,8 @@ it('keeps original worker type when no exception exists for Student worker', fun
     // Arrange
     $service = new WorkerTypeExceptionService;
 
-    $startsAt = Carbon::parse('2023-01-15 10:00:00');
-    $endsAt = Carbon::parse('2023-01-15 14:00:00');
+    $startsAt = CarbonImmutable::parse('2023-01-15 10:00:00');
+    $endsAt = CarbonImmutable::parse('2023-01-15 14:00:00');
 
     // Make sure no exception exists for this worker
     DimonaWorkerTypeException::where('social_security_number', '12345678903')->delete();
@@ -163,8 +163,8 @@ it('keeps original worker type when worker type is not Flexi or Student', functi
     // Arrange
     $service = new WorkerTypeExceptionService;
 
-    $startsAt = Carbon::parse('2023-01-15 10:00:00');
-    $endsAt = Carbon::parse('2023-01-15 14:00:00');
+    $startsAt = CarbonImmutable::parse('2023-01-15 10:00:00');
+    $endsAt = CarbonImmutable::parse('2023-01-15 14:00:00');
 
     $data = new DimonaData(
         employerEnterpriseNumber: '0123456789',
@@ -195,8 +195,8 @@ it('creates a flexi exception when flexi requirements are not met', function () 
     // Arrange
     $service = new WorkerTypeExceptionService;
 
-    $startsAt = Carbon::parse('2023-01-15 10:00:00');
-    $endsAt = Carbon::parse('2023-01-15 14:00:00');
+    $startsAt = CarbonImmutable::parse('2023-01-15 10:00:00');
+    $endsAt = CarbonImmutable::parse('2023-01-15 14:00:00');
 
     $data = new DimonaData(
         employerEnterpriseNumber: '0123456789',
@@ -238,8 +238,8 @@ it('creates a student exception when student requirements are not met', function
     // Arrange
     $service = new WorkerTypeExceptionService;
 
-    $startsAt = Carbon::parse('2023-01-15 10:00:00');
-    $endsAt = Carbon::parse('2023-01-15 14:00:00');
+    $startsAt = CarbonImmutable::parse('2023-01-15 10:00:00');
+    $endsAt = CarbonImmutable::parse('2023-01-15 14:00:00');
 
     $data = new DimonaData(
         employerEnterpriseNumber: '0123456789',
@@ -282,8 +282,8 @@ it('does not create exceptions when no anomalies are present', function () {
     // Arrange
     $service = new WorkerTypeExceptionService;
 
-    $startsAt = Carbon::parse('2023-01-15 10:00:00');
-    $endsAt = Carbon::parse('2023-01-15 14:00:00');
+    $startsAt = CarbonImmutable::parse('2023-01-15 10:00:00');
+    $endsAt = CarbonImmutable::parse('2023-01-15 14:00:00');
 
     $data = new DimonaData(
         employerEnterpriseNumber: '0123456789',
