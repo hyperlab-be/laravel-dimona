@@ -25,7 +25,7 @@ class DimonaServiceProvider extends PackageServiceProvider
         $package
             ->name('laravel-dimona')
             ->hasConfigFile('dimona')
-            ->hasMigration('create_laravel_dimona_table');
+            ->hasMigration('create_dimona_tables');
     }
 
     /**
