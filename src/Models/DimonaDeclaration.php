@@ -30,7 +30,7 @@ class DimonaDeclaration extends Model
 
     public function anomalies(): DimonaAnomalies
     {
-        return new DimonaAnomalies($this->anomalies);
+        return new DimonaAnomalies($this->anomalies ?? []);
     }
 
     public function updateReference(string $reference): self
