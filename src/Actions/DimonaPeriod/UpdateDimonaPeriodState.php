@@ -5,8 +5,7 @@ namespace Hyperlab\Dimona\Actions\DimonaPeriod;
 use Hyperlab\Dimona\Enums\DimonaDeclarationState;
 use Hyperlab\Dimona\Enums\DimonaDeclarationType;
 use Hyperlab\Dimona\Enums\DimonaPeriodState;
-use Hyperlab\Dimona\Events\DimonaPeriodAccepted;
-use Hyperlab\Dimona\Events\DimonaPeriodCancelled;
+use Hyperlab\Dimona\Events\DimonaPeriodStateUpdated;
 use Hyperlab\Dimona\Models\DimonaDeclaration;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Illuminate\Support\Facades\DB;
@@ -32,13 +31,7 @@ class UpdateDimonaPeriodState
 
             $dimonaPeriod->update(['state' => $state]);
 
-            if ($state === DimonaPeriodState::Accepted) {
-                event(new DimonaPeriodAccepted($dimonaPeriod));
-            }
-
-            if ($state === DimonaPeriodState::Cancelled) {
-                event(new DimonaPeriodCancelled($dimonaPeriod));
-            }
+            event(new DimonaPeriodStateUpdated($dimonaPeriod));
 
             return $dimonaPeriod;
         });

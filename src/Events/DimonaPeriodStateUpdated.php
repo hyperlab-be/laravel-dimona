@@ -7,7 +7,7 @@ use Illuminate\Contracts\Events\ShouldDispatchAfterCommit;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class DimonaPeriodCancelled implements ShouldDispatchAfterCommit
+class DimonaPeriodStateUpdated implements ShouldDispatchAfterCommit
 {
     use Dispatchable, SerializesModels;
 

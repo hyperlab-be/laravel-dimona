@@ -4,8 +4,8 @@ use Hyperlab\Dimona\Actions\DimonaPeriod\UpdateDimonaPeriodState;
 use Hyperlab\Dimona\Enums\DimonaDeclarationState;
 use Hyperlab\Dimona\Enums\DimonaDeclarationType;
 use Hyperlab\Dimona\Enums\DimonaPeriodState;
-use Hyperlab\Dimona\Events\DimonaPeriodAccepted;
 use Hyperlab\Dimona\Events\DimonaPeriodCancelled;
+use Hyperlab\Dimona\Events\DimonaPeriodStateUpdated;
 use Hyperlab\Dimona\Models\DimonaDeclaration;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Tests\Models\Employment;
@@ -226,7 +226,7 @@ it('processes declarations in chronological order', function () {
     expect($result->state)->toBe(DimonaPeriodState::Pending);
 });
 
-it('fires DimonaPeriodAccepted event when state changes to Accepted', function () {
+it('fires DimonaPeriodStateUpdated event when state changes', function () {
     // Fake events
     Event::fake();
 
@@ -241,29 +241,8 @@ it('fires DimonaPeriodAccepted event when state changes to Accepted', function (
     // Execute the action
     UpdateDimonaPeriodState::new()->execute($this->dimonaPeriod);
 
-    // Assert that the DimonaPeriodAccepted event was dispatched
-    Event::assertDispatched(DimonaPeriodAccepted::class, function ($event) {
-        return $event->dimonaPeriod->id === $this->dimonaPeriod->id;
-    });
-});
-
-it('fires DimonaPeriodCancelled event when state changes to Cancelled', function () {
-    // Fake events
-    Event::fake();
-
-    // Create an accepted cancel declaration
-    DimonaDeclaration::query()->create([
-        'dimona_period_id' => $this->dimonaPeriod->id,
-        'type' => DimonaDeclarationType::Cancel,
-        'state' => DimonaDeclarationState::Accepted,
-        'payload' => [],
-    ]);
-
-    // Execute the action
-    UpdateDimonaPeriodState::new()->execute($this->dimonaPeriod);
-
-    // Assert that the DimonaPeriodCancelled event was dispatched
-    Event::assertDispatched(DimonaPeriodCancelled::class, function ($event) {
+    // Assert that the DimonaPeriodStateUpdated event was dispatched
+    Event::assertDispatched(DimonaPeriodStateUpdated::class, function ($event) {
         return $event->dimonaPeriod->id === $this->dimonaPeriod->id;
     });
 });
@@ -287,6 +266,6 @@ it('does not fire events when state remains the same', function () {
     UpdateDimonaPeriodState::new()->execute($this->dimonaPeriod);
 
     // Assert that no events were dispatched
-    Event::assertNotDispatched(DimonaPeriodAccepted::class);
+    Event::assertNotDispatched(DimonaPeriodStateUpdated::class);
     Event::assertNotDispatched(DimonaPeriodCancelled::class);
 });

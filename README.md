@@ -167,29 +167,15 @@ Event::listen(function (DimonaPeriodCreated $event) {
 });
 ```
 
-### DimonaPeriodAccepted
+### DimonaPeriodStateUpdated
 
-This event is dispatched when a DimonaPeriod's state is updated to "Accepted".
-
-```php
-use Hyperlab\Dimona\Events\DimonaPeriodAccepted;
-
-// Listen for the event
-Event::listen(function (DimonaPeriodAccepted $event) {
-    $dimonaPeriod = $event->dimonaPeriod;
-    // Your code here
-});
-```
-
-### DimonaPeriodCancelled
-
-This event is dispatched when a DimonaPeriod's state is updated to "Cancelled".
+This event is dispatched when a DimonaPeriod's state is updated.
 
 ```php
-use Hyperlab\Dimona\Events\DimonaPeriodCancelled;
+use Hyperlab\Dimona\Events\DimonaPeriodStateUpdated;
 
 // Listen for the event
-Event::listen(function (DimonaPeriodCancelled $event) {
+Event::listen(function (DimonaPeriodStateUpdated $event) {
     $dimonaPeriod = $event->dimonaPeriod;
     // Your code here
 });
