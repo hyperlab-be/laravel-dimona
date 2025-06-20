@@ -11,6 +11,7 @@ use Hyperlab\Dimona\Enums\WorkerType;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class DimonaPeriod extends Model
 {
@@ -22,6 +23,11 @@ class DimonaPeriod extends Model
         'worker_type' => WorkerType::class,
         'state' => DimonaPeriodState::class,
     ];
+
+    public function model(): MorphTo
+    {
+        return $this->morphTo();
+    }
 
     public function dimona_declarations(): HasMany
     {
