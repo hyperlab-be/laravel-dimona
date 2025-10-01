@@ -9,10 +9,7 @@ use Hyperlab\Dimona\Events\DimonaPeriodStateUpdated;
 use Hyperlab\Dimona\Models\DimonaDeclaration;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Tests\Models\Employment;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
-
-uses(RefreshDatabase::class);
 
 beforeEach(function () {
     // Create a test employment

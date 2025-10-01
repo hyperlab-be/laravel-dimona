@@ -4,7 +4,7 @@ namespace Hyperlab\Dimona\Data;
 
 use Hyperlab\Dimona\Enums\Country;
 
-class DimonaLocationData
+class EmploymentLocationData
 {
     public function __construct(
         public readonly string $name,

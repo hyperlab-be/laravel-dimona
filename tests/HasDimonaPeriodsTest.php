@@ -3,9 +3,6 @@
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Tests\Models\Employment;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-
-uses(RefreshDatabase::class);
 
 it('has a relationship to dimona periods', function () {
     $employment = Employment::query()->create();

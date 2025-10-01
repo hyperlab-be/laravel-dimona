@@ -4,9 +4,6 @@ use Hyperlab\Dimona\Models\DimonaDeclaration;
 use Hyperlab\Dimona\Tests\Models\Employment;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-
-uses(RefreshDatabase::class);
 
 it('has a morphTo relationship to a model', function () {
     $employment = Employment::query()->create();

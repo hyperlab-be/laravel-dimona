@@ -12,10 +12,7 @@ use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Services\DimonaApiClient;
 use Hyperlab\Dimona\Tests\Mocks\MockDimonaApiClient;
 use Hyperlab\Dimona\Tests\Models\Employment;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Queue;
-
-uses(RefreshDatabase::class);
 
 beforeEach(function () {
     // Create a test employment
