@@ -40,6 +40,13 @@ return new class extends Migration
             $table->timestamps();
         });
 
+        Schema::create('dimona_period_employment', function (Blueprint $table) {
+            $table->foreignUlid('dimona_period_id')->constrained()->cascadeOnDelete();
+            $table->string('employment_id');
+
+            $table->unique(['dimona_period_id', 'employment_id']);
+        });
+
         Schema::create('dimona_worker_type_exceptions', function (Blueprint $table) {
             $table->ulid('id')->primary();
             $table->string('social_security_number')->index();
