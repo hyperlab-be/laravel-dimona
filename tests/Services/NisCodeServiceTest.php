@@ -1,13 +1,13 @@
 <?php
 
-use Hyperlab\Dimona\Enums\Country;
+use Hyperlab\Dimona\Enums\EmploymentLocationCountry;
 use Hyperlab\Dimona\Services\NisCodeService;
 
 it('returns the correct NIS code for a country', function () {
     $nis = new NisCodeService;
 
-    expect($nis->getNisCodeForCountry(Country::Belgium))->toBe(150);
-    expect($nis->getNisCodeForCountry(Country::Netherlands))->toBe(129);
+    expect($nis->getNisCodeForCountry(EmploymentLocationCountry::Belgium))->toBe(150);
+    expect($nis->getNisCodeForCountry(EmploymentLocationCountry::Netherlands))->toBe(129);
 });
 
 it('returns the correct NIS code for a municipality', function () {

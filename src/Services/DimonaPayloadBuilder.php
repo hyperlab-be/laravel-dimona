@@ -2,7 +2,7 @@
 
 namespace Hyperlab\Dimona\Services;
 
-use Hyperlab\Dimona\Data\DimonaData;
+use Hyperlab\Dimona\Data\DimonaPeriodData;
 use Hyperlab\Dimona\Enums\WorkerType;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Illuminate\Support\Str;
@@ -14,22 +14,22 @@ class DimonaPayloadBuilder
         return app(static::class);
     }
 
-    public function buildCreatePayload(DimonaData $data): array
+    public function buildCreatePayload(DimonaPeriodData $dimonaPeriodData): array
     {
         $payload = [
             'employer' => [
-                'enterpriseNumber' => $data->employerEnterpriseNumber,
+                'enterpriseNumber' => $dimonaPeriodData->employerEnterpriseNumber,
             ],
             'worker' => [
-                'ssin' => Str::remove(['.', '-', ' '], $data->workerSocialSecurityNumber),
+                'ssin' => Str::remove(['.', '-', ' '], $dimonaPeriodData->workerSocialSecurityNumber),
             ],
             'dimonaIn' => [
                 'features' => [
-                    'jointCommissionNumber' => match ($data->jointCommissionNumber) {
+                    'jointCommissionNumber' => match ($dimonaPeriodData->jointCommissionNumber) {
                         302, 304 => 'XXX',
-                        default => $data->jointCommissionNumber,
+                        default => $dimonaPeriodData->jointCommissionNumber,
                     },
-                    'workerType' => match ($data->workerType) {
+                    'workerType' => match ($dimonaPeriodData->workerType) {
                         WorkerType::Student => 'STU',
                         WorkerType::Flexi => 'FLX',
                         WorkerType::Other => 'OTH',
@@ -38,28 +38,28 @@ class DimonaPayloadBuilder
             ],
         ];
 
-        if ($data->workerType === WorkerType::Student) {
-            $payload['dimonaIn']['plannedHoursNumber'] = ceil($data->startsAt->diffInHours($data->endsAt, true));
+        if ($dimonaPeriodData->workerType === WorkerType::Student) {
+            $payload['dimonaIn']['plannedHoursNumber'] = ceil($dimonaPeriodData->startsAt->diffInHours($dimonaPeriodData->endsAt, true));
             $payload['dimonaIn']['studentPlaceOfWork'] = [
-                'name' => $data->location->name,
+                'name' => $dimonaPeriodData->location->name,
                 'address' => [
-                    'street' => $data->location->street,
-                    'houseNumber' => $data->location->houseNumber,
-                    'boxNumber' => $data->location->boxNumber,
-                    'postCode' => $data->location->postalCode,
+                    'street' => $dimonaPeriodData->location->street,
+                    'houseNumber' => $dimonaPeriodData->location->houseNumber,
+                    'boxNumber' => $dimonaPeriodData->location->boxNumber,
+                    'postCode' => $dimonaPeriodData->location->postalCode,
                     'municipality' => [
-                        'code' => NisCodeService::new()->getNisCodeForMunicipality($data->location->postalCode),
-                        'name' => $data->location->place,
+                        'code' => NisCodeService::new()->getNisCodeForMunicipality($dimonaPeriodData->location->postalCode),
+                        'name' => $dimonaPeriodData->location->place,
                     ],
-                    'country' => NisCodeService::new()->getNisCodeForCountry($data->location->country),
+                    'country' => NisCodeService::new()->getNisCodeForCountry($dimonaPeriodData->location->country),
                 ],
             ];
         }
 
-        $startsAt = $data->startsAt->setTimezone('Europe/Brussels');
-        $endsAt = $data->endsAt->setTimezone('Europe/Brussels');
+        $startsAt = $dimonaPeriodData->startsAt->setTimezone('Europe/Brussels');
+        $endsAt = $dimonaPeriodData->endsAt->setTimezone('Europe/Brussels');
 
-        if ($data->workerType === WorkerType::Flexi) {
+        if ($dimonaPeriodData->workerType === WorkerType::Flexi) {
             $payload['dimonaIn']['startDate'] = $startsAt->format('Y-m-d');
             $payload['dimonaIn']['startHour'] = $startsAt->format('Hi');
             $payload['dimonaIn']['endDate'] = $endsAt->format('Y-m-d');
@@ -72,7 +72,7 @@ class DimonaPayloadBuilder
         return $payload;
     }
 
-    public function buildUpdatePayload(DimonaPeriod $dimonaPeriod, DimonaData $data): array
+    public function buildUpdatePayload(DimonaPeriod $dimonaPeriod, DimonaPeriodData $dimonaPeriodData): array
     {
         $payload = [
             'dimonaUpdate' => [
@@ -80,14 +80,14 @@ class DimonaPayloadBuilder
             ],
         ];
 
-        if ($data->workerType === WorkerType::Student) {
-            $payload['dimonaUpdate']['plannedHoursNumber'] = ceil($data->startsAt->diffInHours($data->endsAt, true));
+        if ($dimonaPeriodData->workerType === WorkerType::Student) {
+            $payload['dimonaUpdate']['plannedHoursNumber'] = ceil($dimonaPeriodData->startsAt->diffInHours($dimonaPeriodData->endsAt, true));
         }
 
-        $startsAt = $data->startsAt->setTimezone('Europe/Brussels');
-        $endsAt = $data->endsAt->setTimezone('Europe/Brussels');
+        $startsAt = $dimonaPeriodData->startsAt->setTimezone('Europe/Brussels');
+        $endsAt = $dimonaPeriodData->endsAt->setTimezone('Europe/Brussels');
 
-        if ($data->workerType === WorkerType::Flexi) {
+        if ($dimonaPeriodData->workerType === WorkerType::Flexi) {
             $payload['dimonaIn']['startDate'] = $startsAt->format('Y-m-d');
             $payload['dimonaIn']['startHour'] = $startsAt->format('Hi');
             $payload['dimonaIn']['endDate'] = $endsAt->format('Y-m-d');
@@ -100,7 +100,7 @@ class DimonaPayloadBuilder
         return $payload;
     }
 
-    public function buildCancelPayload(DimonaPeriod $dimonaPeriod, DimonaData $data): array
+    public function buildCancelPayload(DimonaPeriod $dimonaPeriod): array
     {
         return [
             'dimonaCancel' => [

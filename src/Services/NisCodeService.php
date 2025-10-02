@@ -3,7 +3,7 @@
 namespace Hyperlab\Dimona\Services;
 
 use Exception;
-use Hyperlab\Dimona\Enums\Country;
+use Hyperlab\Dimona\Enums\EmploymentLocationCountry;
 
 class NisCodeService
 {
@@ -15,11 +15,11 @@ class NisCodeService
     /*
      * Source: https://www.socialsecurity.be/portail/glossaires/dmfa.nsf/820da2a60329e7abc1256b210060ae67/b2ba2bfe49b73464c1256cde003328a9/$FILE/AN2003-2-Nl5.pdf
      */
-    public function getNisCodeForCountry(Country $country): int
+    public function getNisCodeForCountry(EmploymentLocationCountry $country): int
     {
         return match ($country) {
-            Country::Belgium => 150,
-            Country::Netherlands => 129,
+            EmploymentLocationCountry::Belgium => 150,
+            EmploymentLocationCountry::Netherlands => 129,
         };
     }
 

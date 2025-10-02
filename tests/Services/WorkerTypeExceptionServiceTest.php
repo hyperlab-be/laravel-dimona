@@ -1,11 +1,12 @@
 <?php
 
 use Carbon\CarbonImmutable;
-use Hyperlab\Dimona\Data\DimonaData;
-use Hyperlab\Dimona\Data\DimonaLocationData;
-use Hyperlab\Dimona\Enums\Country;
+use Hyperlab\Dimona\Enums\DimonaDeclarationState;
+use Hyperlab\Dimona\Enums\DimonaDeclarationType;
+use Hyperlab\Dimona\Enums\DimonaPeriodState;
 use Hyperlab\Dimona\Enums\WorkerType;
 use Hyperlab\Dimona\Models\DimonaDeclaration;
+use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Models\DimonaWorkerTypeException;
 use Hyperlab\Dimona\Services\WorkerTypeExceptionService;
 
@@ -24,26 +25,12 @@ it('resolves worker type to Other when exception exists for Flexi worker', funct
         'ends_at' => $startsAt->copy()->endOfDay(),
     ]);
 
-    $data = new DimonaData(
-        employerEnterpriseNumber: '0123456789',
-        jointCommissionNumber: 123,
-        workerType: WorkerType::Flexi,
-        workerSocialSecurityNumber: '12345678901',
-        startsAt: $startsAt,
-        endsAt: $endsAt,
-        location: new DimonaLocationData(
-            name: 'Test Location',
-            street: 'Test Street',
-            houseNumber: '1',
-            boxNumber: null,
-            postalCode: '1000',
-            place: 'Test City',
-            country: Country::Belgium
-        )
-    );
-
     // Act
-    $resolvedType = $service->resolveWorkerType($data);
+    $resolvedType = $service->resolveWorkerType(
+        workerSocialSecurityNumber: '12345678901',
+        workerType: WorkerType::Flexi,
+        employmentStartsAt: $startsAt
+    );
 
     // Assert
     expect($resolvedType)->toBe(WorkerType::Other);
@@ -64,26 +51,12 @@ it('resolves worker type to Other when exception exists for Student worker', fun
         'ends_at' => $startsAt->copy()->endOfDay(),
     ]);
 
-    $data = new DimonaData(
-        employerEnterpriseNumber: '0123456789',
-        jointCommissionNumber: 123,
-        workerType: WorkerType::Student,
-        workerSocialSecurityNumber: '12345678901',
-        startsAt: $startsAt,
-        endsAt: $endsAt,
-        location: new DimonaLocationData(
-            name: 'Test Location',
-            street: 'Test Street',
-            houseNumber: '1',
-            boxNumber: null,
-            postalCode: '1000',
-            place: 'Test City',
-            country: Country::Belgium
-        )
-    );
-
     // Act
-    $resolvedType = $service->resolveWorkerType($data);
+    $resolvedType = $service->resolveWorkerType(
+        workerSocialSecurityNumber: '12345678901',
+        workerType: WorkerType::Student,
+        employmentStartsAt: $startsAt
+    );
 
     // Assert
     expect($resolvedType)->toBe(WorkerType::Other);
@@ -99,26 +72,12 @@ it('keeps original worker type when no exception exists for Flexi worker', funct
     // Make sure no exception exists for this worker
     DimonaWorkerTypeException::where('social_security_number', '12345678902')->delete();
 
-    $data = new DimonaData(
-        employerEnterpriseNumber: '0123456789',
-        jointCommissionNumber: 123,
-        workerType: WorkerType::Flexi,
-        workerSocialSecurityNumber: '12345678902',
-        startsAt: $startsAt,
-        endsAt: $endsAt,
-        location: new DimonaLocationData(
-            name: 'Test Location',
-            street: 'Test Street',
-            houseNumber: '1',
-            boxNumber: null,
-            postalCode: '1000',
-            place: 'Test City',
-            country: Country::Belgium
-        )
-    );
-
     // Act
-    $resolvedType = $service->resolveWorkerType($data);
+    $resolvedType = $service->resolveWorkerType(
+        workerSocialSecurityNumber: '12345678902',
+        workerType: WorkerType::Flexi,
+        employmentStartsAt: $startsAt
+    );
 
     // Assert
     expect($resolvedType)->toBe(WorkerType::Flexi);
@@ -134,26 +93,12 @@ it('keeps original worker type when no exception exists for Student worker', fun
     // Make sure no exception exists for this worker
     DimonaWorkerTypeException::where('social_security_number', '12345678903')->delete();
 
-    $data = new DimonaData(
-        employerEnterpriseNumber: '0123456789',
-        jointCommissionNumber: 123,
-        workerType: WorkerType::Student,
-        workerSocialSecurityNumber: '12345678903',
-        startsAt: $startsAt,
-        endsAt: $endsAt,
-        location: new DimonaLocationData(
-            name: 'Test Location',
-            street: 'Test Street',
-            houseNumber: '1',
-            boxNumber: null,
-            postalCode: '1000',
-            place: 'Test City',
-            country: Country::Belgium
-        )
-    );
-
     // Act
-    $resolvedType = $service->resolveWorkerType($data);
+    $resolvedType = $service->resolveWorkerType(
+        workerSocialSecurityNumber: '12345678903',
+        workerType: WorkerType::Student,
+        employmentStartsAt: $startsAt
+    );
 
     // Assert
     expect($resolvedType)->toBe(WorkerType::Student);
@@ -164,28 +109,13 @@ it('keeps original worker type when worker type is not Flexi or Student', functi
     $service = new WorkerTypeExceptionService;
 
     $startsAt = CarbonImmutable::parse('2023-01-15 10:00:00');
-    $endsAt = CarbonImmutable::parse('2023-01-15 14:00:00');
-
-    $data = new DimonaData(
-        employerEnterpriseNumber: '0123456789',
-        jointCommissionNumber: 123,
-        workerType: WorkerType::Other,
-        workerSocialSecurityNumber: '12345678904',
-        startsAt: $startsAt,
-        endsAt: $endsAt,
-        location: new DimonaLocationData(
-            name: 'Test Location',
-            street: 'Test Street',
-            houseNumber: '1',
-            boxNumber: null,
-            postalCode: '1000',
-            place: 'Test City',
-            country: Country::Belgium
-        )
-    );
 
     // Act
-    $resolvedType = $service->resolveWorkerType($data);
+    $resolvedType = $service->resolveWorkerType(
+        workerSocialSecurityNumber: '12345678904',
+        workerType: WorkerType::Other,
+        employmentStartsAt: $startsAt
+    );
 
     // Assert
     expect($resolvedType)->toBe(WorkerType::Other);
@@ -196,31 +126,30 @@ it('creates a flexi exception when flexi requirements are not met', function () 
     $service = new WorkerTypeExceptionService;
 
     $startsAt = CarbonImmutable::parse('2023-01-15 10:00:00');
-    $endsAt = CarbonImmutable::parse('2023-01-15 14:00:00');
 
-    $data = new DimonaData(
-        employerEnterpriseNumber: '0123456789',
-        jointCommissionNumber: 123,
-        workerType: WorkerType::Flexi,
-        workerSocialSecurityNumber: '12345678905',
-        startsAt: $startsAt,
-        endsAt: $endsAt,
-        location: new DimonaLocationData(
-            name: 'Test Location',
-            street: 'Test Street',
-            houseNumber: '1',
-            boxNumber: null,
-            postalCode: '1000',
-            place: 'Test City',
-            country: Country::Belgium
-        )
-    );
+    // Create a DimonaPeriod
+    $dimonaPeriod = DimonaPeriod::create([
+        'employer_enterprise_number' => '0123456789',
+        'worker_social_security_number' => '12345678905',
+        'joint_commission_number' => '123',
+        'worker_type' => WorkerType::Flexi,
+        'starts_at' => $startsAt,
+        'ends_at' => $startsAt->addHours(4),
+        'state' => DimonaPeriodState::New,
+        'employment_ids' => ['test-employment-id'],
+    ]);
 
-    $declaration = new DimonaDeclaration;
-    $declaration->anomalies = ['90017-510'];
+    // Create a DimonaDeclaration with flexi anomaly
+    $declaration = DimonaDeclaration::create([
+        'dimona_period_id' => $dimonaPeriod->id,
+        'type' => DimonaDeclarationType::In,
+        'state' => DimonaDeclarationState::Pending,
+        'payload' => [],
+        'anomalies' => ['90017-510'],
+    ]);
 
     // Act
-    $service->handleExceptions($declaration, $data);
+    $service->handleExceptions($declaration);
 
     // Assert
     $exception = DimonaWorkerTypeException::where('social_security_number', '12345678905')
@@ -239,32 +168,30 @@ it('creates a student exception when student requirements are not met', function
     $service = new WorkerTypeExceptionService;
 
     $startsAt = CarbonImmutable::parse('2023-01-15 10:00:00');
-    $endsAt = CarbonImmutable::parse('2023-01-15 14:00:00');
 
-    $data = new DimonaData(
-        employerEnterpriseNumber: '0123456789',
-        jointCommissionNumber: 123,
-        workerType: WorkerType::Student,
-        workerSocialSecurityNumber: '12345678906',
-        startsAt: $startsAt,
-        endsAt: $endsAt,
-        location: new DimonaLocationData(
-            name: 'Test Location',
-            street: 'Test Street',
-            houseNumber: '1',
-            boxNumber: null,
-            postalCode: '1000',
-            place: 'Test City',
-            country: Country::Belgium
-        )
-    );
+    // Create a DimonaPeriod
+    $dimonaPeriod = DimonaPeriod::create([
+        'employer_enterprise_number' => '0123456789',
+        'worker_social_security_number' => '12345678906',
+        'joint_commission_number' => '123',
+        'worker_type' => WorkerType::Student,
+        'starts_at' => $startsAt,
+        'ends_at' => $startsAt->addHours(4),
+        'state' => DimonaPeriodState::New,
+        'employment_ids' => ['test-employment-id'],
+    ]);
 
-    // Mock the DimonaDeclaration anomalies
-    $declaration = new DimonaDeclaration;
-    $declaration->anomalies = ['90017-369'];
+    // Create a DimonaDeclaration with student anomaly
+    $declaration = DimonaDeclaration::create([
+        'dimona_period_id' => $dimonaPeriod->id,
+        'type' => DimonaDeclarationType::In,
+        'state' => DimonaDeclarationState::Pending,
+        'payload' => [],
+        'anomalies' => ['90017-369'],
+    ]);
 
     // Act
-    $service->handleExceptions($declaration, $data);
+    $service->handleExceptions($declaration);
 
     // Assert
     $exception = DimonaWorkerTypeException::where('social_security_number', '12345678906')
@@ -283,35 +210,33 @@ it('does not create exceptions when no anomalies are present', function () {
     $service = new WorkerTypeExceptionService;
 
     $startsAt = CarbonImmutable::parse('2023-01-15 10:00:00');
-    $endsAt = CarbonImmutable::parse('2023-01-15 14:00:00');
-
-    $data = new DimonaData(
-        employerEnterpriseNumber: '0123456789',
-        jointCommissionNumber: 123,
-        workerType: WorkerType::Flexi,
-        workerSocialSecurityNumber: '12345678907',
-        startsAt: $startsAt,
-        endsAt: $endsAt,
-        location: new DimonaLocationData(
-            name: 'Test Location',
-            street: 'Test Street',
-            houseNumber: '1',
-            boxNumber: null,
-            postalCode: '1000',
-            place: 'Test City',
-            country: Country::Belgium
-        )
-    );
 
     // Make sure no exception exists for this worker
     DimonaWorkerTypeException::where('social_security_number', '12345678907')->delete();
 
-    // Mock the DimonaDeclaration anomalies
-    $declaration = new DimonaDeclaration;
-    $declaration->anomalies = [];
+    // Create a DimonaPeriod
+    $dimonaPeriod = DimonaPeriod::create([
+        'employer_enterprise_number' => '0123456789',
+        'worker_social_security_number' => '12345678907',
+        'joint_commission_number' => '123',
+        'worker_type' => WorkerType::Flexi,
+        'starts_at' => $startsAt,
+        'ends_at' => $startsAt->addHours(4),
+        'state' => DimonaPeriodState::New,
+        'employment_ids' => ['test-employment-id'],
+    ]);
+
+    // Create a DimonaDeclaration with no anomalies
+    $declaration = DimonaDeclaration::create([
+        'dimona_period_id' => $dimonaPeriod->id,
+        'type' => DimonaDeclarationType::In,
+        'state' => DimonaDeclarationState::Pending,
+        'payload' => [],
+        'anomalies' => [],
+    ]);
 
     // Act
-    $service->handleExceptions($declaration, $data);
+    $service->handleExceptions($declaration);
 
     // Assert
     $exceptionCount = DimonaWorkerTypeException::where('social_security_number', '12345678907')->count();

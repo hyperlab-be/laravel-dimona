@@ -1,38 +1,37 @@
 <?php
 
 use Carbon\CarbonImmutable;
-use Hyperlab\Dimona\Data\DimonaData;
-use Hyperlab\Dimona\Data\DimonaLocationData;
-use Hyperlab\Dimona\Enums\Country;
+use Hyperlab\Dimona\Data\DimonaPeriodData;
+use Hyperlab\Dimona\Data\EmploymentLocationData;
+use Hyperlab\Dimona\Enums\EmploymentLocationCountry;
 use Hyperlab\Dimona\Enums\WorkerType;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Services\DimonaPayloadBuilder;
 
-beforeEach(function () {
-    $this->builder = new DimonaPayloadBuilder;
-});
-
 it('builds a create payload for student worker type', function () {
-    $dimonaData = new DimonaData(
+    $dimonaPeriodData = new DimonaPeriodData(
+        employmentIds: ['emp-1', 'emp-2'],
         employerEnterpriseNumber: '0123456789',
+        workerSocialSecurityNumber: '12.34.56-789.10',
         jointCommissionNumber: 302,
         workerType: WorkerType::Student,
-        workerSocialSecurityNumber: '12.34.56-789.10',
         startsAt: CarbonImmutable::parse('2023-01-01 09:00:00'),
         endsAt: CarbonImmutable::parse('2023-01-01 17:00:00'),
-        location: new DimonaLocationData(
+        location: new EmploymentLocationData(
             name: 'Test Location',
             street: 'Test Street',
             houseNumber: '123',
             boxNumber: null,
             postalCode: '1000',
             place: 'Brussels',
-            country: Country::Belgium
+            country: EmploymentLocationCountry::Belgium
         )
     );
 
     // Build the payload
-    $payload = $this->builder->buildCreatePayload($dimonaData);
+    $payload = DimonaPayloadBuilder::new()->buildCreatePayload(
+        dimonaPeriodData: $dimonaPeriodData
+    );
 
     // Assert the payload structure
     expect($payload)->toBeArray()
@@ -53,26 +52,29 @@ it('builds a create payload for student worker type', function () {
 });
 
 it('builds a create payload for flexi worker type', function () {
-    $dimonaData = new DimonaData(
+    $dimonaPeriodData = new DimonaPeriodData(
+        employmentIds: ['emp-1'],
         employerEnterpriseNumber: '0123456789',
+        workerSocialSecurityNumber: '12.34.56-789.10',
         jointCommissionNumber: 302,
         workerType: WorkerType::Flexi,
-        workerSocialSecurityNumber: '12.34.56-789.10',
         startsAt: CarbonImmutable::parse('2023-01-01 09:00:00'),
         endsAt: CarbonImmutable::parse('2023-01-01 17:00:00'),
-        location: new DimonaLocationData(
+        location: new EmploymentLocationData(
             name: 'Test Location',
             street: 'Test Street',
             houseNumber: '123',
             boxNumber: null,
             postalCode: '1000',
             place: 'Brussels',
-            country: Country::Belgium
+            country: EmploymentLocationCountry::Belgium
         )
     );
 
     // Build the payload
-    $payload = $this->builder->buildCreatePayload($dimonaData);
+    $payload = DimonaPayloadBuilder::new()->buildCreatePayload(
+        dimonaPeriodData: $dimonaPeriodData
+    );
 
     // Assert the payload structure
     expect($payload)->toBeArray()
@@ -87,26 +89,29 @@ it('builds a create payload for flexi worker type', function () {
 });
 
 it('builds a create payload for other worker type', function () {
-    $dimonaData = new DimonaData(
+    $dimonaPeriodData = new DimonaPeriodData(
+        employmentIds: ['emp-1'],
         employerEnterpriseNumber: '0123456789',
+        workerSocialSecurityNumber: '12.34.56-789.10',
         jointCommissionNumber: 200,
         workerType: WorkerType::Other,
-        workerSocialSecurityNumber: '12.34.56-789.10',
         startsAt: CarbonImmutable::parse('2023-01-01 09:00:00'),
         endsAt: CarbonImmutable::parse('2023-01-01 17:00:00'),
-        location: new DimonaLocationData(
+        location: new EmploymentLocationData(
             name: 'Test Location',
             street: 'Test Street',
             houseNumber: '123',
             boxNumber: null,
             postalCode: '1000',
             place: 'Brussels',
-            country: Country::Belgium
+            country: EmploymentLocationCountry::Belgium
         )
     );
 
     // Build the payload
-    $payload = $this->builder->buildCreatePayload($dimonaData);
+    $payload = DimonaPayloadBuilder::new()->buildCreatePayload(
+        dimonaPeriodData: $dimonaPeriodData
+    );
 
     // Assert the payload structure
     expect($payload)->toBeArray()
@@ -119,21 +124,22 @@ it('builds a create payload for other worker type', function () {
 });
 
 it('builds an update payload for student worker type', function () {
-    $dimonaData = new DimonaData(
+    $dimonaPeriodData = new DimonaPeriodData(
+        employmentIds: ['emp-1'],
         employerEnterpriseNumber: '0123456789',
+        workerSocialSecurityNumber: '12.34.56-789.10',
         jointCommissionNumber: 302,
         workerType: WorkerType::Student,
-        workerSocialSecurityNumber: '12.34.56-789.10',
         startsAt: CarbonImmutable::parse('2023-01-01 09:00:00'),
         endsAt: CarbonImmutable::parse('2023-01-01 17:00:00'),
-        location: new DimonaLocationData(
+        location: new EmploymentLocationData(
             name: 'Test Location',
             street: 'Test Street',
             houseNumber: '123',
             boxNumber: null,
             postalCode: '1000',
             place: 'Brussels',
-            country: Country::Belgium
+            country: EmploymentLocationCountry::Belgium
         )
     );
 
@@ -142,7 +148,10 @@ it('builds an update payload for student worker type', function () {
     $dimonaPeriod->reference = '123456';
 
     // Build the payload
-    $payload = $this->builder->buildUpdatePayload($dimonaPeriod, $dimonaData);
+    $payload = DimonaPayloadBuilder::new()->buildUpdatePayload(
+        dimonaPeriod: $dimonaPeriod,
+        dimonaPeriodData: $dimonaPeriodData
+    );
 
     // Assert the payload structure
     expect($payload)->toBeArray()
@@ -153,21 +162,22 @@ it('builds an update payload for student worker type', function () {
 });
 
 it('builds an update payload for flexi worker type', function () {
-    $dimonaData = new DimonaData(
+    $dimonaPeriodData = new DimonaPeriodData(
+        employmentIds: ['emp-1'],
         employerEnterpriseNumber: '0123456789',
+        workerSocialSecurityNumber: '12.34.56-789.10',
         jointCommissionNumber: 302,
         workerType: WorkerType::Flexi,
-        workerSocialSecurityNumber: '12.34.56-789.10',
         startsAt: CarbonImmutable::parse('2023-01-01 09:00:00'),
         endsAt: CarbonImmutable::parse('2023-01-01 17:00:00'),
-        location: new DimonaLocationData(
+        location: new EmploymentLocationData(
             name: 'Test Location',
             street: 'Test Street',
             houseNumber: '123',
             boxNumber: null,
             postalCode: '1000',
             place: 'Brussels',
-            country: Country::Belgium
+            country: EmploymentLocationCountry::Belgium
         )
     );
 
@@ -176,7 +186,10 @@ it('builds an update payload for flexi worker type', function () {
     $dimonaPeriod->reference = '123456';
 
     // Build the payload
-    $payload = $this->builder->buildUpdatePayload($dimonaPeriod, $dimonaData);
+    $payload = DimonaPayloadBuilder::new()->buildUpdatePayload(
+        dimonaPeriod: $dimonaPeriod,
+        dimonaPeriodData: $dimonaPeriodData
+    );
 
     // Assert the payload structure
     expect($payload)->toBeArray()
@@ -188,21 +201,22 @@ it('builds an update payload for flexi worker type', function () {
 });
 
 it('builds an update payload for other worker type', function () {
-    $dimonaData = new DimonaData(
+    $dimonaPeriodData = new DimonaPeriodData(
+        employmentIds: ['emp-1'],
         employerEnterpriseNumber: '0123456789',
+        workerSocialSecurityNumber: '12.34.56-789.10',
         jointCommissionNumber: 200,
         workerType: WorkerType::Other,
-        workerSocialSecurityNumber: '12.34.56-789.10',
         startsAt: CarbonImmutable::parse('2023-01-01 09:00:00'),
         endsAt: CarbonImmutable::parse('2023-01-01 17:00:00'),
-        location: new DimonaLocationData(
+        location: new EmploymentLocationData(
             name: 'Test Location',
             street: 'Test Street',
             houseNumber: '123',
             boxNumber: null,
             postalCode: '1000',
             place: 'Brussels',
-            country: Country::Belgium
+            country: EmploymentLocationCountry::Belgium
         )
     );
 
@@ -211,7 +225,10 @@ it('builds an update payload for other worker type', function () {
     $dimonaPeriod->reference = '123456';
 
     // Build the payload
-    $payload = $this->builder->buildUpdatePayload($dimonaPeriod, $dimonaData);
+    $payload = DimonaPayloadBuilder::new()->buildUpdatePayload(
+        dimonaPeriod: $dimonaPeriod,
+        dimonaPeriodData: $dimonaPeriodData
+    );
 
     // Assert the payload structure
     expect($payload)->toBeArray()
@@ -221,30 +238,12 @@ it('builds an update payload for other worker type', function () {
 });
 
 it('builds a cancel payload', function () {
-    $dimonaData = new DimonaData(
-        employerEnterpriseNumber: '0123456789',
-        jointCommissionNumber: 302,
-        workerType: WorkerType::Student,
-        workerSocialSecurityNumber: '12.34.56-789.10',
-        startsAt: CarbonImmutable::parse('2023-01-01 09:00:00'),
-        endsAt: CarbonImmutable::parse('2023-01-01 17:00:00'),
-        location: new DimonaLocationData(
-            name: 'Test Location',
-            street: 'Test Street',
-            houseNumber: '123',
-            boxNumber: null,
-            postalCode: '1000',
-            place: 'Brussels',
-            country: Country::Belgium
-        )
-    );
-
     // Create a DimonaPeriod instance
     $dimonaPeriod = new DimonaPeriod;
     $dimonaPeriod->reference = '123456';
 
     // Build the payload
-    $payload = $this->builder->buildCancelPayload($dimonaPeriod, $dimonaData);
+    $payload = DimonaPayloadBuilder::new()->buildCancelPayload(dimonaPeriod: $dimonaPeriod);
 
     // Assert the payload structure
     expect($payload)->toBeArray()
