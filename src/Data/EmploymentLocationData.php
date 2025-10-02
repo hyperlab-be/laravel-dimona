@@ -2,7 +2,7 @@
 
 namespace Hyperlab\Dimona\Data;
 
-use Hyperlab\Dimona\Enums\Country;
+use Hyperlab\Dimona\Enums\EmploymentLocationCountry;
 
 class EmploymentLocationData
 {
@@ -13,6 +13,6 @@ class EmploymentLocationData
         public readonly ?string $boxNumber,
         public readonly string $postalCode,
         public readonly string $place,
-        public readonly Country $country,
+        public readonly EmploymentLocationCountry $country,
     ) {}
 }

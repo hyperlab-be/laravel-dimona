@@ -10,9 +10,9 @@ class DimonaPeriodData
     public function __construct(
         public array $employmentIds,
         public string $employerEnterpriseNumber,
+        public string $workerSocialSecurityNumber,
         public int $jointCommissionNumber,
         public WorkerType $workerType,
-        public string $workerSocialSecurityNumber,
         public CarbonImmutable $startsAt,
         public CarbonImmutable $endsAt,
         public EmploymentLocationData $location,

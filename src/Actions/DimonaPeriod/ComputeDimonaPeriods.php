@@ -4,10 +4,17 @@ namespace Hyperlab\Dimona\Actions\DimonaPeriod;
 
 use Hyperlab\Dimona\Data\DimonaPeriodData;
 use Hyperlab\Dimona\Data\EmploymentData;
+use Hyperlab\Dimona\Services\WorkerTypeExceptionService;
 use Illuminate\Support\Collection;
+
+use function json_encode;
 
 class ComputeDimonaPeriods
 {
+    public function __construct(
+        private WorkerTypeExceptionService $workerTypeExceptionService
+    ) {}
+
     public static function new(): static
     {
         return app(static::class);
@@ -16,23 +23,29 @@ class ComputeDimonaPeriods
     /**
      * @param  Collection<EmploymentData>  $employments
      */
-    public function execute(Collection $employments): Collection
-    {
+    public function execute(
+        string $employerEnterpriseNumber, string $workerSocialSecurityNumber, Collection $employments
+    ): Collection {
         return $employments
+            ->each(function (EmploymentData $employment) use ($workerSocialSecurityNumber) {
+                $employment->workerType = $this->workerTypeExceptionService->resolveWorkerType(
+                    workerSocialSecurityNumber: $workerSocialSecurityNumber,
+                    workerType: $employment->workerType,
+                    employmentStartsAt: $employment->startsAt,
+                );
+            })
             ->groupBy(function (EmploymentData $employment) {
                 return json_encode([
-                    $employment->employerEnterpriseNumber,
                     $employment->jointCommissionNumber,
-                    $employment->workerType,
-                    $employment->workerSocialSecurityNumber,
+                    $employment->workerType->value,
                     $employment->startsAt->format('Y-m-d'),
                 ]);
             })
-            ->flatMap(function (Collection $employments) {
+            ->map(function (Collection $employments) use ($employerEnterpriseNumber, $workerSocialSecurityNumber) {
                 return $employments
                     ->sortBy('startsAt')
                     ->reduce(
-                        function (Collection $dimonaPeriods, EmploymentData $employment) {
+                        function (Collection $dimonaPeriods, EmploymentData $employment) use ($employerEnterpriseNumber, $workerSocialSecurityNumber) {
                             /** @var DimonaPeriodData|null $lastDimonaPeriod */
                             $lastDimonaPeriod = $dimonaPeriods->last();
 
@@ -42,10 +55,10 @@ class ComputeDimonaPeriods
                             } else {
                                 $dimonaPeriods->push(new DimonaPeriodData(
                                     employmentIds: [$employment->id],
-                                    employerEnterpriseNumber: $employment->employerEnterpriseNumber,
+                                    employerEnterpriseNumber: $employerEnterpriseNumber,
+                                    workerSocialSecurityNumber: $workerSocialSecurityNumber,
                                     jointCommissionNumber: $employment->jointCommissionNumber,
                                     workerType: $employment->workerType,
-                                    workerSocialSecurityNumber: $employment->workerSocialSecurityNumber,
                                     startsAt: $employment->startsAt,
                                     endsAt: $employment->endsAt,
                                     location: $employment->location,
