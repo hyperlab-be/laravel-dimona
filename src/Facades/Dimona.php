@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Facade;
 
 /**
  * @method static \Hyperlab\Dimona\DimonaManager client(?string $clientId = null)
- * @method static void declare(\Carbon\CarbonPeriodImmutable $period, \Illuminate\Support\Collection $employments)
+ * @method static void declare(string $employerEnterpriseNumber, string $workerSocialSecurityNumber, \Carbon\CarbonPeriodImmutable $period, \Illuminate\Support\Collection $employments)
  *
  * @see \Hyperlab\Dimona\DimonaManager
  */

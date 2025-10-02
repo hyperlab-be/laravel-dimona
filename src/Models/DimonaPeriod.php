@@ -21,7 +21,10 @@ class DimonaPeriod extends Model
 
     protected $casts = [
         'worker_type' => WorkerType::class,
+        'starts_at' => 'datetime',
+        'ends_at' => 'datetime',
         'state' => DimonaPeriodState::class,
+        'employment_ids' => 'array',
     ];
 
     public function model(): MorphTo

@@ -1,24 +1,25 @@
 <?php
 
+use Carbon\CarbonImmutable;
 use Hyperlab\Dimona\Actions\DimonaPeriod\UpdateDimonaPeriodState;
 use Hyperlab\Dimona\Enums\DimonaDeclarationState;
 use Hyperlab\Dimona\Enums\DimonaDeclarationType;
 use Hyperlab\Dimona\Enums\DimonaPeriodState;
-use Hyperlab\Dimona\Events\DimonaPeriodCancelled;
+use Hyperlab\Dimona\Enums\WorkerType;
 use Hyperlab\Dimona\Events\DimonaPeriodStateUpdated;
 use Hyperlab\Dimona\Models\DimonaDeclaration;
 use Hyperlab\Dimona\Models\DimonaPeriod;
-use Hyperlab\Dimona\Tests\Models\Employment;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function () {
-    // Create a test employment
-    $this->employment = Employment::query()->create();
-
-    // Create a dimona period
     $this->dimonaPeriod = DimonaPeriod::query()->create([
-        'model_id' => $this->employment->id,
-        'model_type' => Employment::class,
+        'employer_enterprise_number' => '0123456789',
+        'worker_social_security_number' => '12345678901',
+        'joint_commission_number' => 200,
+        'worker_type' => WorkerType::Student,
+        'starts_at' => CarbonImmutable::parse('2025-10-01 08:00'),
+        'ends_at' => CarbonImmutable::parse('2025-10-01 17:00'),
+        'employment_ids' => ['01K6JJEW27BED4J86035PAJDKZ'],
         'state' => DimonaPeriodState::New,
     ]);
 });
@@ -264,5 +265,4 @@ it('does not fire events when state remains the same', function () {
 
     // Assert that no events were dispatched
     Event::assertNotDispatched(DimonaPeriodStateUpdated::class);
-    Event::assertNotDispatched(DimonaPeriodCancelled::class);
 });

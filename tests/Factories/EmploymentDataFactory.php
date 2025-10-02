@@ -5,7 +5,7 @@ namespace Hyperlab\Dimona\Tests\Factories;
 use Carbon\CarbonImmutable;
 use Hyperlab\Dimona\Data\EmploymentData;
 use Hyperlab\Dimona\Data\EmploymentLocationData;
-use Hyperlab\Dimona\Enums\Country;
+use Hyperlab\Dimona\Enums\EmploymentLocationCountry;
 use Hyperlab\Dimona\Enums\WorkerType;
 use Illuminate\Support\Str;
 
@@ -15,13 +15,9 @@ class EmploymentDataFactory
 {
     private ?string $id = null;
 
-    private ?string $employerEnterpriseNumber = null;
-
     private ?int $jointCommissionNumber = null;
 
     private ?WorkerType $workerType = null;
-
-    private ?string $workerSocialSecurityNumber = null;
 
     private ?CarbonImmutable $startsAt = null;
 
@@ -42,14 +38,6 @@ class EmploymentDataFactory
         return $clone;
     }
 
-    public function employerEnterpriseNumber(string $employerEnterpriseNumber): self
-    {
-        $clone = clone $this;
-        $clone->employerEnterpriseNumber = $employerEnterpriseNumber;
-
-        return $clone;
-    }
-
     public function jointCommissionNumber(int $jointCommissionNumber): self
     {
         $clone = clone $this;
@@ -62,14 +50,6 @@ class EmploymentDataFactory
     {
         $clone = clone $this;
         $clone->workerType = $workerType;
-
-        return $clone;
-    }
-
-    public function workerSocialSecurityNumber(string $workerSocialSecurityNumber): self
-    {
-        $clone = clone $this;
-        $clone->workerSocialSecurityNumber = $workerSocialSecurityNumber;
 
         return $clone;
     }
@@ -102,10 +82,8 @@ class EmploymentDataFactory
     {
         return new EmploymentData(
             id: $this->id ?? Str::ulid(),
-            employerEnterpriseNumber: $this->employerEnterpriseNumber ?? fake()->numerify('##########'),
             jointCommissionNumber: $this->jointCommissionNumber ?? fake()->randomElement([202, 204]),
             workerType: $this->workerType ?? fake()->randomElement(WorkerType::cases()),
-            workerSocialSecurityNumber: $this->workerSocialSecurityNumber ?? fake()->numerify('###########'),
             startsAt: $this->startsAt ?? CarbonImmutable::parse('2025-10-01 07:00'),
             endsAt: $this->endsAt ?? CarbonImmutable::parse('2025-10-01 12:00'),
             location: $this->location ?? $this->defaultLocation(),
@@ -121,7 +99,7 @@ class EmploymentDataFactory
             boxNumber: null,
             postalCode: '3960',
             place: 'Bree',
-            country: Country::Belgium,
+            country: EmploymentLocationCountry::Belgium,
         );
     }
 }

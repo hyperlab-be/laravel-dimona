@@ -4,7 +4,7 @@ namespace Hyperlab\Dimona;
 
 use Carbon\CarbonPeriodImmutable;
 use Hyperlab\Dimona\Data\EmploymentData;
-use Hyperlab\Dimona\Jobs\DeclareDimona;
+use Hyperlab\Dimona\Jobs\SyncDimonaPeriods;
 use Hyperlab\Dimona\Services\DimonaApiClientManager;
 use Illuminate\Support\Collection;
 
@@ -36,8 +36,12 @@ class DimonaManager
      *
      * @param  Collection<EmploymentData>  $employments
      */
-    public function declare(CarbonPeriodImmutable $period, Collection $employments): void
-    {
-        DeclareDimona::dispatch($period, $employments, $this->clientId);
+    public function declare(
+        string $employerEnterpriseNumber,
+        string $workerSocialSecurityNumber,
+        CarbonPeriodImmutable $period,
+        Collection $employments
+    ): void {
+        SyncDimonaPeriods::dispatch($employerEnterpriseNumber, $workerSocialSecurityNumber, $period, $employments, $this->clientId);
     }
 }
