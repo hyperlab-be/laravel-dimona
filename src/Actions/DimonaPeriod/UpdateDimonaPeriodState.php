@@ -45,8 +45,14 @@ class UpdateDimonaPeriodState
             return null;
         }
 
-        if ($dimonaDeclarations->last()?->state === DimonaDeclarationState::Pending) {
+        $lastDeclarationState = $dimonaDeclarations->last()?->state;
+
+        if ($lastDeclarationState === DimonaDeclarationState::Pending) {
             return DimonaPeriodState::Pending;
+        }
+
+        if ($lastDeclarationState === DimonaDeclarationState::Waiting) {
+            return DimonaPeriodState::Waiting;
         }
 
         return $dimonaDeclarations->reduce(
@@ -71,6 +77,7 @@ class UpdateDimonaPeriodState
             DimonaDeclarationState::AcceptedWithWarning => $this->handleAcceptedWithWarning($declaration),
             DimonaDeclarationState::Refused => DimonaPeriodState::Refused,
             DimonaDeclarationState::Waiting => DimonaPeriodState::Waiting,
+            DimonaDeclarationState::Failed => DimonaPeriodState::Failed,
             default => null,
         };
     }

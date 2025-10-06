@@ -19,7 +19,6 @@ beforeEach(function () {
         'worker_type' => WorkerType::Student,
         'starts_at' => CarbonImmutable::parse('2025-10-01 08:00'),
         'ends_at' => CarbonImmutable::parse('2025-10-01 17:00'),
-        'employment_ids' => ['01K6JJEW27BED4J86035PAJDKZ'],
         'state' => DimonaPeriodState::New,
     ]);
 });

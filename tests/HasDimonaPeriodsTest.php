@@ -27,7 +27,6 @@ it('only returns dimona periods that are attached via pivot table', function () 
         'worker_type' => WorkerType::Student,
         'starts_at' => CarbonImmutable::parse('2025-10-01 08:00'),
         'ends_at' => CarbonImmutable::parse('2025-10-01 17:00'),
-        'employment_ids' => [$employment->id],
         'state' => DimonaPeriodState::Pending,
     ]);
     $employment->dimona_periods()->attach($period);
@@ -40,7 +39,6 @@ it('only returns dimona periods that are attached via pivot table', function () 
         'worker_type' => WorkerType::Student,
         'starts_at' => CarbonImmutable::parse('2025-10-02 08:00'),
         'ends_at' => CarbonImmutable::parse('2025-10-02 17:00'),
-        'employment_ids' => [$employment->id, $otherEmployment->id],
         'state' => DimonaPeriodState::Pending,
     ]);
     $employment->dimona_periods()->attach($sharedPeriod);
@@ -54,7 +52,6 @@ it('only returns dimona periods that are attached via pivot table', function () 
         'worker_type' => WorkerType::Student,
         'starts_at' => CarbonImmutable::parse('2025-10-03 08:00'),
         'ends_at' => CarbonImmutable::parse('2025-10-03 17:00'),
-        'employment_ids' => [$otherEmployment->id],
         'state' => DimonaPeriodState::Pending,
     ]);
     $otherEmployment->dimona_periods()->attach($otherPeriod);

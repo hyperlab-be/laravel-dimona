@@ -136,7 +136,9 @@ it('creates a flexi exception when flexi requirements are not met', function () 
         'starts_at' => $startsAt,
         'ends_at' => $startsAt->addHours(4),
         'state' => DimonaPeriodState::New,
-        'employment_ids' => ['test-employment-id'],
+    ]);
+    $dimonaPeriod->dimona_period_employments()->create([
+        'employment_id' => 'test-employment-id',
     ]);
 
     // Create a DimonaDeclaration with flexi anomaly
@@ -178,7 +180,9 @@ it('creates a student exception when student requirements are not met', function
         'starts_at' => $startsAt,
         'ends_at' => $startsAt->addHours(4),
         'state' => DimonaPeriodState::New,
-        'employment_ids' => ['test-employment-id'],
+    ]);
+    $dimonaPeriod->dimona_period_employments()->create([
+        'employment_id' => 'test-employment-id',
     ]);
 
     // Create a DimonaDeclaration with student anomaly
@@ -223,7 +227,9 @@ it('does not create exceptions when no anomalies are present', function () {
         'starts_at' => $startsAt,
         'ends_at' => $startsAt->addHours(4),
         'state' => DimonaPeriodState::New,
-        'employment_ids' => ['test-employment-id'],
+    ]);
+    $dimonaPeriod->dimona_period_employments()->create([
+        'employment_id' => 'test-employment-id',
     ]);
 
     // Create a DimonaDeclaration with no anomalies

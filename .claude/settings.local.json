@@ -3,7 +3,10 @@
     "allow": [
       "Bash(./vendor/bin/pest:*)",
       "Bash(find:*)",
-      "Bash(composer require:*)"
+      "Bash(composer require:*)",
+      "Bash(grep:*)",
+      "Bash(php artisan test:*)",
+      "Bash(php:*)"
     ],
     "deny": [],
     "ask": []

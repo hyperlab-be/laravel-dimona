@@ -7,6 +7,7 @@ use Hyperlab\Dimona\Data\DimonaPeriodOperationData;
 use Hyperlab\Dimona\Enums\DimonaPeriodOperation;
 use Hyperlab\Dimona\Enums\DimonaPeriodState;
 use Hyperlab\Dimona\Models\DimonaPeriod;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 
 class ComputeDimonaPeriodOperations
@@ -18,12 +19,19 @@ class ComputeDimonaPeriodOperations
 
     /**
      * @param  Collection<Collection<DimonaPeriodData>>  $expectedDimonaPeriods
-     * @param  Collection<DimonaPeriod>  $actualDimonaPeriods
+     * @param  EloquentCollection<DimonaPeriod>  $actualDimonaPeriods
      * @return Collection<DimonaPeriodOperationData>
      */
     public function execute(Collection $expectedDimonaPeriods, Collection $actualDimonaPeriods): Collection
     {
         $diffs = collect();
+
+        // Eager load employment IDs for all periods if it's an Eloquent collection
+        if ($actualDimonaPeriods instanceof EloquentCollection) {
+            $actualDimonaPeriods->load('dimona_period_employments');
+        } else {
+            $actualDimonaPeriods->each(fn (DimonaPeriod $period) => $period->load('dimona_period_employments'));
+        }
 
         // Group actual periods by their key (jointCommissionNumber, workerType, date)
         $actualPeriodsGrouped = $actualDimonaPeriods->groupBy(function (DimonaPeriod $period) {
@@ -127,7 +135,9 @@ class ComputeDimonaPeriodOperations
     {
         // First, try to find exact match by employment IDs
         $exactMatch = $actualPeriods->first(function (DimonaPeriod $actual) use ($expected) {
-            return count(array_intersect($actual->employment_ids, $expected->employmentIds)) > 0;
+            $actualEmploymentIds = $actual->dimona_period_employments->pluck('employment_id')->toArray();
+
+            return count(array_intersect($actualEmploymentIds, $expected->employmentIds)) > 0;
         });
 
         if ($exactMatch) {
@@ -159,7 +169,7 @@ class ComputeDimonaPeriodOperations
         }
 
         // Check if employment IDs differ
-        $actualIds = collect($actual->employment_ids)->sort()->values()->toArray();
+        $actualIds = collect($actual->dimona_period_employments->pluck('employment_id')->toArray())->sort()->values()->toArray();
         $expectedIds = collect($expected->employmentIds)->sort()->values()->toArray();
 
         if ($actualIds !== $expectedIds) {

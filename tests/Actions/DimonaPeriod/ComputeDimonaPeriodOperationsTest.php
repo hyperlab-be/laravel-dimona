@@ -50,7 +50,9 @@ it('generates cancel diffs for actual periods with no expected', function () {
         'starts_at' => CarbonImmutable::parse('2025-10-01 07:00'),
         'ends_at' => CarbonImmutable::parse('2025-10-01 12:00'),
         'state' => DimonaPeriodState::Accepted,
-        'employment_ids' => ['employment-1'],
+    ]);
+    $actualPeriod->dimona_period_employments()->create([
+        'employment_id' => 'employment-1',
     ]);
 
     $expected = collect();
@@ -84,7 +86,9 @@ it('generates update diff when dates differ', function () {
         'starts_at' => CarbonImmutable::parse('2025-10-01 07:00'),
         'ends_at' => CarbonImmutable::parse('2025-10-01 12:00'),
         'state' => DimonaPeriodState::Accepted,
-        'employment_ids' => ['employment-1'],
+    ]);
+    $actualPeriod->dimona_period_employments()->create([
+        'employment_id' => 'employment-1',
     ]);
 
     $expected = collect([collect([$expectedPeriod])]);
@@ -118,7 +122,9 @@ it('generates update diff when employment IDs differ', function () {
         'starts_at' => CarbonImmutable::parse('2025-10-01 07:00'),
         'ends_at' => CarbonImmutable::parse('2025-10-01 12:00'),
         'state' => DimonaPeriodState::Accepted,
-        'employment_ids' => ['employment-1'],
+    ]);
+    $actualPeriod->dimona_period_employments()->create([
+        'employment_id' => 'employment-1',
     ]);
 
     $expected = collect([collect([$expectedPeriod])]);
@@ -152,7 +158,9 @@ it('generates no diff when expected and actual match perfectly', function () {
         'starts_at' => CarbonImmutable::parse('2025-10-01 07:00'),
         'ends_at' => CarbonImmutable::parse('2025-10-01 12:00'),
         'state' => DimonaPeriodState::Accepted,
-        'employment_ids' => ['employment-1'],
+    ]);
+    $actualPeriod->dimona_period_employments()->create([
+        'employment_id' => 'employment-1',
     ]);
 
     $expected = collect([collect([$expectedPeriod])]);
@@ -183,7 +191,9 @@ it('skips pending periods from operations', function () {
         'starts_at' => CarbonImmutable::parse('2025-10-01 07:00'),
         'ends_at' => CarbonImmutable::parse('2025-10-01 12:00'),
         'state' => DimonaPeriodState::Pending,
-        'employment_ids' => ['employment-1'],
+    ]);
+    $actualPeriod->dimona_period_employments()->create([
+        'employment_id' => 'employment-1',
     ]);
 
     $expected = collect([collect([$expectedPeriod])]);
@@ -214,7 +224,9 @@ it('generates cancel operation for periods with AcceptedWithWarning state', func
         'starts_at' => CarbonImmutable::parse('2025-10-01 07:00'),
         'ends_at' => CarbonImmutable::parse('2025-10-01 12:00'),
         'state' => DimonaPeriodState::AcceptedWithWarning,
-        'employment_ids' => ['employment-1'],
+    ]);
+    $actualPeriod->dimona_period_employments()->create([
+        'employment_id' => 'employment-1',
     ]);
 
     $expected = collect([collect([$expectedPeriod])]);
@@ -248,8 +260,10 @@ it('matches periods by overlapping employment IDs', function () {
         'starts_at' => CarbonImmutable::parse('2025-10-01 07:00'),
         'ends_at' => CarbonImmutable::parse('2025-10-01 12:00'),
         'state' => DimonaPeriodState::Accepted,
-        'employment_ids' => ['employment-1'], // Overlapping ID
     ]);
+    $actualPeriod->dimona_period_employments()->create([
+        'employment_id' => 'employment-1',
+    ]); // Overlapping ID
 
     $expected = collect([collect([$expectedPeriod])]);
     $actual = collect([$actualPeriod]);
@@ -325,7 +339,9 @@ it('handles different worker types separately', function () {
         'starts_at' => CarbonImmutable::parse('2025-10-01 07:00'),
         'ends_at' => CarbonImmutable::parse('2025-10-01 12:00'),
         'state' => DimonaPeriodState::Accepted,
-        'employment_ids' => ['employment-1'],
+    ]);
+    $actualFlexi->dimona_period_employments()->create([
+        'employment_id' => 'employment-1',
     ]);
 
     $expected = collect([
@@ -374,8 +390,10 @@ it('handles complex scenario with multiple operations', function () {
         'starts_at' => CarbonImmutable::parse('2025-10-01 07:00'),
         'ends_at' => CarbonImmutable::parse('2025-10-01 12:00'),
         'state' => DimonaPeriodState::Accepted,
-        'employment_ids' => ['employment-1'], // Will be updated
     ]);
+    $actual1->dimona_period_employments()->create([
+        'employment_id' => 'employment-1',
+    ]); // Will be updated
 
     $actual2 = DimonaPeriod::create([
         'employer_enterprise_number' => '0123456789',
@@ -385,8 +403,10 @@ it('handles complex scenario with multiple operations', function () {
         'starts_at' => CarbonImmutable::parse('2025-10-01 18:00'),
         'ends_at' => CarbonImmutable::parse('2025-10-01 22:00'),
         'state' => DimonaPeriodState::Accepted,
-        'employment_ids' => ['employment-old'], // Will be cancelled
     ]);
+    $actual2->dimona_period_employments()->create([
+        'employment_id' => 'employment-old',
+    ]); // Will be cancelled
 
     $expected = collect([collect([$expected1, $expected2])]);
     $actual = collect([$actual1, $actual2]);
@@ -464,8 +484,11 @@ it('ignores employment ID order when comparing', function () {
         'starts_at' => CarbonImmutable::parse('2025-10-01 07:00'),
         'ends_at' => CarbonImmutable::parse('2025-10-01 12:00'),
         'state' => DimonaPeriodState::Accepted,
-        'employment_ids' => ['employment-1', 'employment-2'], // Different order
     ]);
+    $actualPeriod->dimona_period_employments()->createMany([
+        ['employment_id' => 'employment-1'],
+        ['employment_id' => 'employment-2'],
+    ]); // Different order
 
     $expected = collect([collect([$expectedPeriod])]);
     $actual = collect([$actualPeriod]);
