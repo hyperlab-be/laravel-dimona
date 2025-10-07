@@ -91,7 +91,9 @@ class SyncDimonaPeriods implements ShouldBeUnique, ShouldQueue
 
         // Separate cancel operations from other operations
         $cancelOperations = $dimonaPeriodOperations->filter(fn ($op) => $op->type === DimonaPeriodOperation::Cancel);
-        $otherOperations = $dimonaPeriodOperations->filter(fn ($op) => $op->type !== DimonaPeriodOperation::Cancel);
+        $linkOperations = $dimonaPeriodOperations->filter(fn ($op) => $op->type === DimonaPeriodOperation::Link);
+        $createOperations = $dimonaPeriodOperations->filter(fn ($op) => $op->type === DimonaPeriodOperation::Create);
+        $updateOperations = $dimonaPeriodOperations->filter(fn ($op) => $op->type === DimonaPeriodOperation::Update);
 
         // If there are cancel operations, execute only those and redispatch
         if ($cancelOperations->isNotEmpty()) {
@@ -101,18 +103,13 @@ class SyncDimonaPeriods implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        // Otherwise, execute update and create operations
-        $otherOperations->each(function (DimonaPeriodOperationData $operation) {
-            match ($operation->type) {
-                DimonaPeriodOperation::Create => $this->handleCreate($operation),
-                DimonaPeriodOperation::Update => $this->handleUpdate($operation),
-                DimonaPeriodOperation::Cancel => null, // Already handled above
-            };
-        });
+        $linkOperations->each(fn ($operation) => $this->handleLink($operation));
+        $updateOperations->each(fn ($operation) => $this->handleUpdate($operation));
+        $createOperations->each(fn ($operation) => $this->handleCreate($operation));
 
         // Step 3: Re-dispatch if operations were applied
 
-        if ($otherOperations->isNotEmpty()) {
+        if ($createOperations->isNotEmpty() || $updateOperations->isNotEmpty()) {
             $this->redispatchJob();
         }
     }
@@ -252,28 +249,31 @@ class SyncDimonaPeriods implements ShouldBeUnique, ShouldQueue
             dimonaPeriodData: $operation->expected
         );
 
-        $operation->actual->update([
-            'starts_at' => $operation->expected->startsAt,
-            'ends_at' => $operation->expected->endsAt,
-        ]);
-
-        // Sync employment IDs via pivot table
-        \DB::table('dimona_period_employment')
-            ->where('dimona_period_id', $operation->actual->id)
-            ->delete();
-
-        foreach ($operation->expected->employmentIds as $employmentId) {
-            \DB::table('dimona_period_employment')->insert([
-                'dimona_period_id' => $operation->actual->id,
-                'employment_id' => $employmentId,
-            ]);
-        }
-
         $this->createDimonaDeclaration(
             dimonaPeriod: $operation->actual,
             type: DimonaDeclarationType::Update,
             payload: $payload
         );
+
+        $operation->actual->update([
+            'starts_at' => $operation->expected->startsAt,
+            'ends_at' => $operation->expected->endsAt,
+        ]);
+    }
+
+    private function handleLink(DimonaPeriodOperationData $operation): void
+    {
+        // Sync employment IDs via pivot table
+        DB::table('dimona_period_employment')
+            ->where('dimona_period_id', $operation->actual->id)
+            ->delete();
+
+        foreach ($operation->expected->employmentIds as $employmentId) {
+            DB::table('dimona_period_employment')->insert([
+                'dimona_period_id' => $operation->actual->id,
+                'employment_id' => $employmentId,
+            ]);
+        }
     }
 
     private function handleCancel(DimonaPeriodOperationData $operation): void

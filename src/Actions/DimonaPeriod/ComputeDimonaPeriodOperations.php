@@ -61,17 +61,25 @@ class ComputeDimonaPeriodOperations
 
                 if ($matchingActual) {
                     // Skip periods that are pending (will be synced separately)
-                    if (! $this->needsSync($matchingActual)) {
+                    if (! $this->shouldSync($matchingActual)) {
                         // Check if update is needed
-                        if ($this->needsUpdate($expected, $matchingActual)) {
+                        if ($this->shouldUpdate($expected, $matchingActual)) {
                             $diffs->push(new DimonaPeriodOperationData(
                                 type: DimonaPeriodOperation::Update,
                                 expected: $expected,
                                 actual: $matchingActual,
                             ));
                         }
+                        // Check if link is needed
+                        if ($this->shouldLink($expected, $matchingActual)) {
+                            $diffs->push(new DimonaPeriodOperationData(
+                                type: DimonaPeriodOperation::Link,
+                                expected: $expected,
+                                actual: $matchingActual,
+                            ));
+                        }
                         // Check if period should be cancelled (AcceptedWithWarning)
-                        elseif ($this->shouldCancel($matchingActual)) {
+                        if ($this->shouldCancel($matchingActual)) {
                             $diffs->push(new DimonaPeriodOperationData(
                                 type: DimonaPeriodOperation::Cancel,
                                 expected: null,
@@ -153,7 +161,7 @@ class ComputeDimonaPeriodOperations
     /**
      * Check if a period needs to be synced (has pending state).
      */
-    private function needsSync(DimonaPeriod $actual): bool
+    private function shouldSync(DimonaPeriod $actual): bool
     {
         return $actual->state === DimonaPeriodState::Pending;
     }
@@ -161,22 +169,20 @@ class ComputeDimonaPeriodOperations
     /**
      * Check if an actual period needs to be updated based on the expected data.
      */
-    private function needsUpdate(DimonaPeriodData $expected, DimonaPeriod $actual): bool
+    private function shouldUpdate(DimonaPeriodData $expected, DimonaPeriod $actual): bool
     {
-        // Check if dates differ
-        if (! $actual->starts_at->eq($expected->startsAt) || ! $actual->ends_at->eq($expected->endsAt)) {
-            return true;
-        }
+        return $actual->starts_at->notEqualTo($expected->startsAt) || $actual->ends_at->notEqualTo($expected->endsAt);
+    }
 
-        // Check if employment IDs differ
+    /**
+     * Check if the employment IDs of the actual period need to be updated based on the expected data.
+     */
+    private function shouldLink(DimonaPeriodData $expected, DimonaPeriod $actual): bool
+    {
         $actualIds = collect($actual->dimona_period_employments->pluck('employment_id')->toArray())->sort()->values()->toArray();
         $expectedIds = collect($expected->employmentIds)->sort()->values()->toArray();
 
-        if ($actualIds !== $expectedIds) {
-            return true;
-        }
-
-        return false;
+        return $actualIds !== $expectedIds;
     }
 
     /**
