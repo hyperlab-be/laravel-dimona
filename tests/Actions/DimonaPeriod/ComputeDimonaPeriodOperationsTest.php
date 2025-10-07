@@ -102,7 +102,7 @@ it('generates update diff when dates differ', function () {
         ->and($result[0]->actual->id)->toBe($actualPeriod->id);
 });
 
-it('generates update diff when employment IDs differ', function () {
+it('generates link diff when employment IDs differ', function () {
     $expectedPeriod = new DimonaPeriodData(
         employmentIds: ['employment-1', 'employment-2'],
         employerEnterpriseNumber: '0123456789',
@@ -133,7 +133,7 @@ it('generates update diff when employment IDs differ', function () {
     $result = ComputeDimonaPeriodOperations::new()->execute($expected, $actual);
 
     expect($result)->toHaveCount(1)
-        ->and($result[0]->type)->toBe(DimonaPeriodOperation::Update)
+        ->and($result[0]->type)->toBe(DimonaPeriodOperation::Link)
         ->and($result[0]->expected)->toBe($expectedPeriod)
         ->and($result[0]->actual->id)->toBe($actualPeriod->id);
 });
