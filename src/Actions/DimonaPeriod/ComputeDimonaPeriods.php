@@ -14,6 +14,7 @@ class ComputeDimonaPeriods
     private const string TIMEZONE = 'Europe/Brussels';
 
     private string $employerEnterpriseNumber;
+
     private string $workerSocialSecurityNumber;
 
     public function __construct(

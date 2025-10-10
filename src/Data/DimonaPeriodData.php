@@ -2,7 +2,6 @@
 
 namespace Hyperlab\Dimona\Data;
 
-use Carbon\CarbonImmutable;
 use Hyperlab\Dimona\Enums\WorkerType;
 
 class DimonaPeriodData
