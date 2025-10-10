@@ -8,6 +8,7 @@ use Hyperlab\Dimona\Actions\DimonaPeriod\UpdateDimonaPeriodState;
 use Hyperlab\Dimona\Database\Factories\DimonaPeriodFactory;
 use Hyperlab\Dimona\Enums\DimonaDeclarationType;
 use Hyperlab\Dimona\Enums\DimonaPeriodState;
+use Hyperlab\Dimona\Enums\EmploymentLocationCountry;
 use Hyperlab\Dimona\Enums\WorkerType;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -25,6 +26,7 @@ class DimonaPeriod extends Model
         'joint_commission_number' => 'integer',
         'number_of_hours' => 'float',
         'state' => DimonaPeriodState::class,
+        'location_country' => EmploymentLocationCountry::class,
     ];
 
     public function dimona_declarations(): HasMany
