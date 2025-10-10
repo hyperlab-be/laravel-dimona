@@ -10,6 +10,7 @@ use Hyperlab\Dimona\Enums\WorkerType;
 use Illuminate\Support\Str;
 
 use function fake;
+use function is_string;
 
 class EmploymentDataFactory
 {
@@ -54,16 +55,24 @@ class EmploymentDataFactory
         return $clone;
     }
 
-    public function startsAt(CarbonImmutable $startsAt): self
+    public function startsAt(string|CarbonImmutable $startsAt): self
     {
+        if (is_string($startsAt)) {
+            $startsAt = CarbonImmutable::parse($startsAt, 'Europe/Brussels');
+        }
+
         $clone = clone $this;
         $clone->startsAt = $startsAt;
 
         return $clone;
     }
 
-    public function endsAt(CarbonImmutable $endsAt): self
+    public function endsAt(string|CarbonImmutable $endsAt): self
     {
+        if (is_string($endsAt)) {
+            $endsAt = CarbonImmutable::parse($endsAt, 'Europe/Brussels');
+        }
+
         $clone = clone $this;
         $clone->endsAt = $endsAt;
 

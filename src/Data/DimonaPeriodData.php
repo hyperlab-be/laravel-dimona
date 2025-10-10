@@ -13,8 +13,11 @@ class DimonaPeriodData
         public string $workerSocialSecurityNumber,
         public int $jointCommissionNumber,
         public WorkerType $workerType,
-        public CarbonImmutable $startsAt,
-        public CarbonImmutable $endsAt,
+        public string $startDate,
+        public ?string $startHour,
+        public string $endDate,
+        public ?string $endHour,
+        public ?float $numberOfHours,
         public EmploymentLocationData $location,
     ) {}
 }

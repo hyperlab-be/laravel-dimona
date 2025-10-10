@@ -14,8 +14,11 @@ return new class extends Migration
             $table->string('worker_social_security_number');
             $table->string('joint_commission_number');
             $table->string('worker_type');
-            $table->timestamp('starts_at');
-            $table->timestamp('ends_at');
+            $table->string('start_date');
+            $table->string('start_hour')->nullable();
+            $table->string('end_date');
+            $table->string('end_hour')->nullable();
+            $table->float('number_of_hours')->nullable();
             $table->string('location_name')->nullable();
             $table->string('location_street')->nullable();
             $table->string('location_house_number')->nullable();

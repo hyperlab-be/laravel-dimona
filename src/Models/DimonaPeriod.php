@@ -23,8 +23,7 @@ class DimonaPeriod extends Model
     protected $casts = [
         'worker_type' => WorkerType::class,
         'joint_commission_number' => 'integer',
-        'starts_at' => 'datetime',
-        'ends_at' => 'datetime',
+        'number_of_hours' => 'float',
         'state' => DimonaPeriodState::class,
     ];
 
