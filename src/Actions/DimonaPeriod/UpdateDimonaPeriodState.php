@@ -61,6 +61,10 @@ class UpdateDimonaPeriodState
                     return $this->determineStateForInDeclaration($declaration);
                 }
 
+                if ($declaration->type === DimonaDeclarationType::Update) {
+                    return $this->determineStateForUpdateDeclaration($declaration);
+                }
+
                 if ($declaration->type === DimonaDeclarationType::Cancel) {
                     return $this->determineStateForCancelDeclaration($declaration, $currentState);
                 }
@@ -82,11 +86,25 @@ class UpdateDimonaPeriodState
         };
     }
 
+    private function determineStateForUpdateDeclaration(DimonaDeclaration $declaration): ?DimonaPeriodState
+    {
+        return match ($declaration->state) {
+            DimonaDeclarationState::Accepted => DimonaPeriodState::Accepted,
+            DimonaDeclarationState::AcceptedWithWarning => $this->handleAcceptedWithWarning($declaration),
+            DimonaDeclarationState::Refused => DimonaPeriodState::Refused,
+            DimonaDeclarationState::Waiting => DimonaPeriodState::Waiting,
+            DimonaDeclarationState::Failed => DimonaPeriodState::Failed,
+            default => null,
+        };
+    }
+
     private function handleAcceptedWithWarning(DimonaDeclaration $declaration): DimonaPeriodState
     {
-        return $declaration->anomalies()->flexiRequirementsAreNotMet()
-            ? DimonaPeriodState::AcceptedWithWarning
-            : DimonaPeriodState::Accepted;
+        if ($declaration->anomalies()->flexiRequirementsAreNotMet()) {
+            return DimonaPeriodState::AcceptedWithWarning;
+        }
+
+        return DimonaPeriodState::Accepted;
     }
 
     private function determineStateForCancelDeclaration(
