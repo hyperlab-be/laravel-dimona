@@ -1,11 +1,9 @@
 <?php
 
-use Carbon\CarbonImmutable;
 use Carbon\CarbonPeriodImmutable;
 use Hyperlab\Dimona\Enums\DimonaDeclarationState;
 use Hyperlab\Dimona\Enums\DimonaDeclarationType;
 use Hyperlab\Dimona\Enums\DimonaPeriodState;
-use Hyperlab\Dimona\Enums\WorkerType;
 use Hyperlab\Dimona\Jobs\SyncDimonaPeriodsJob;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Tests\Factories\EmploymentDataFactory;
@@ -53,13 +51,7 @@ it('cancels a dimona period when employment is removed', function () {
     ]);
 
     $employments = collect([
-        EmploymentDataFactory::new()
-            ->id('emp-1')
-            ->startsAt(CarbonImmutable::parse('2025-10-01 07:00'))
-            ->endsAt(CarbonImmutable::parse('2025-10-01 12:00'))
-            ->workerType(WorkerType::Student)
-            ->jointCommissionNumber(202)
-            ->create(),
+        EmploymentDataFactory::new()->create(),
     ]);
 
     $job = new SyncDimonaPeriodsJob(

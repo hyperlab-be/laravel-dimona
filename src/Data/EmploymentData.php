@@ -8,11 +8,11 @@ use Hyperlab\Dimona\Enums\WorkerType;
 class EmploymentData
 {
     public function __construct(
-        public readonly string $id,
-        public readonly int $jointCommissionNumber,
+        public string $id,
+        public int $jointCommissionNumber,
         public WorkerType $workerType,
-        public readonly CarbonImmutable $startsAt,
-        public readonly CarbonImmutable $endsAt,
-        public readonly EmploymentLocationData $location,
+        public CarbonImmutable $startsAt,
+        public CarbonImmutable $endsAt,
+        public EmploymentLocationData $location,
     ) {}
 }

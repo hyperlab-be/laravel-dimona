@@ -2,6 +2,7 @@
 
 use Carbon\CarbonImmutable;
 use Carbon\CarbonPeriodImmutable;
+use Hyperlab\Dimona\Data\EmploymentData;
 use Hyperlab\Dimona\Enums\DimonaDeclarationState;
 use Hyperlab\Dimona\Enums\DimonaDeclarationType;
 use Hyperlab\Dimona\Enums\DimonaPeriodState;
@@ -41,13 +42,7 @@ it('creates a new dimona period when no periods exist', function () {
     ]);
 
     $employments = collect([
-        EmploymentDataFactory::new()
-            ->id('emp-1')
-            ->startsAt(CarbonImmutable::parse('2025-10-01 07:00'))
-            ->endsAt(CarbonImmutable::parse('2025-10-01 12:00'))
-            ->workerType(WorkerType::Student)
-            ->jointCommissionNumber(202)
-            ->create(),
+        EmploymentDataFactory::new()->create(),
     ]);
 
     $job = new SyncDimonaPeriodsJob(
@@ -123,15 +118,10 @@ it('creates multiple dimona periods for different time slots', function () {
     $employments = collect([
         EmploymentDataFactory::new()
             ->id('emp-1')
-            ->startsAt(CarbonImmutable::parse('2025-10-01 07:00'))
-            ->endsAt(CarbonImmutable::parse('2025-10-01 12:00'))
-            ->workerType(WorkerType::Student)
             ->create(),
         EmploymentDataFactory::new()
             ->id('emp-2')
             ->startsAt(CarbonImmutable::parse('2025-10-03 07:00'))
-            ->endsAt(CarbonImmutable::parse('2025-10-03 12:00'))
-            ->workerType(WorkerType::Student)
             ->create(),
     ]);
 
@@ -185,10 +175,7 @@ it('handles 500 API exceptions when creating declarations', function () {
     ]);
 
     $employments = collect([
-        EmploymentDataFactory::new()
-            ->startsAt(CarbonImmutable::parse('2025-10-01 07:00'))
-            ->endsAt(CarbonImmutable::parse('2025-10-01 12:00'))
-            ->create(),
+        EmploymentDataFactory::new()->create(),
     ]);
 
     $job = new SyncDimonaPeriodsJob(
@@ -218,10 +205,7 @@ it('handles 400 bad request when creating declarations', function () {
     ]);
 
     $employments = collect([
-        EmploymentDataFactory::new()
-            ->startsAt(CarbonImmutable::parse('2025-10-01 07:00'))
-            ->endsAt(CarbonImmutable::parse('2025-10-01 12:00'))
-            ->create(),
+        EmploymentDataFactory::new()->create(),
     ]);
 
     $job = new SyncDimonaPeriodsJob(
@@ -254,10 +238,7 @@ it('handles 422 unprocessable entity when creating declarations', function () {
     ]);
 
     $employments = collect([
-        EmploymentDataFactory::new()
-            ->startsAt(CarbonImmutable::parse('2025-10-01 07:00'))
-            ->endsAt(CarbonImmutable::parse('2025-10-01 12:00'))
-            ->create(),
+        EmploymentDataFactory::new()->create(),
     ]);
 
     $job = new SyncDimonaPeriodsJob(
@@ -310,17 +291,10 @@ it('handles multiple pending declarations across different periods', function ()
     $employments = collect([
         EmploymentDataFactory::new()
             ->id('emp-1')
-            ->startsAt(CarbonImmutable::parse('2025-10-01 07:00'))
-            ->endsAt(CarbonImmutable::parse('2025-10-01 12:00'))
-            ->workerType(WorkerType::Student)
-            ->jointCommissionNumber(202)
             ->create(),
         EmploymentDataFactory::new()
             ->id('emp-2')
             ->startsAt(CarbonImmutable::parse('2025-10-05 07:00'))
-            ->endsAt(CarbonImmutable::parse('2025-10-05 12:00'))
-            ->workerType(WorkerType::Student)
-            ->jointCommissionNumber(202)
             ->create(),
     ]);
 
@@ -397,10 +371,6 @@ it('keeps existing dimona period when employment switches but details stay the s
     $employments = collect([
         EmploymentDataFactory::new()
             ->id('emp-1')
-            ->startsAt(CarbonImmutable::parse('2025-10-01 07:00'))
-            ->endsAt(CarbonImmutable::parse('2025-10-01 12:00'))
-            ->workerType(WorkerType::Student)
-            ->jointCommissionNumber(202)
             ->create(),
     ]);
 
@@ -460,14 +430,12 @@ it('keeps existing dimona period when employment switches but details stay the s
 
     (new UniqueLock(app(Cache::class)))->release($job);
 
+    /** @var EmploymentData $updatedEmployment */
+    $updatedEmployment = clone $employments->first();
+    $updatedEmployment->id = 'emp-2';
+
     $updatedEmployments = collect([
-        EmploymentDataFactory::new()
-            ->id('emp-2')
-            ->startsAt(CarbonImmutable::parse('2025-10-01 07:00'))
-            ->endsAt(CarbonImmutable::parse('2025-10-01 12:00'))
-            ->workerType(WorkerType::Student)
-            ->jointCommissionNumber(202)
-            ->create(),
+        $updatedEmployment
     ]);
 
     $job = new SyncDimonaPeriodsJob(

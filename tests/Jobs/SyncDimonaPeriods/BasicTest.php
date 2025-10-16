@@ -1,10 +1,6 @@
 <?php
 
-use Carbon\CarbonImmutable;
 use Carbon\CarbonPeriodImmutable;
-use Hyperlab\Dimona\Enums\DimonaDeclarationState;
-use Hyperlab\Dimona\Enums\DimonaDeclarationType;
-use Hyperlab\Dimona\Enums\WorkerType;
 use Hyperlab\Dimona\Jobs\SyncDimonaPeriodsJob;
 use Hyperlab\Dimona\Models\DimonaDeclaration;
 use Hyperlab\Dimona\Models\DimonaPeriod;
@@ -96,10 +92,6 @@ describe('Backoff calculation', function () {
         $employments = collect([
             EmploymentDataFactory::new()
                 ->id($employmentId)
-                ->startsAt(CarbonImmutable::parse('2025-10-01 07:00:00'))
-                ->endsAt(CarbonImmutable::parse('2025-10-01 12:00:00'))
-                ->workerType(WorkerType::Student)
-                ->jointCommissionNumber(202)
                 ->create(),
         ]);
 
@@ -133,11 +125,8 @@ describe('Backoff calculation', function () {
             ->withEmployments([$employmentId])
             ->create();
 
-        DimonaDeclaration::query()->create([
+        DimonaDeclaration::factory()->create([
             'dimona_period_id' => $dimonaPeriod->id,
-            'type' => DimonaDeclarationType::In,
-            'state' => DimonaDeclarationState::Pending,
-            'payload' => [],
             'reference' => 'declaration-ref-1',
             'created_at' => now()->subSeconds(100),
         ]);
@@ -145,10 +134,6 @@ describe('Backoff calculation', function () {
         $employments = collect([
             EmploymentDataFactory::new()
                 ->id($employmentId)
-                ->startsAt(CarbonImmutable::parse('2025-10-01 07:00:00'))
-                ->endsAt(CarbonImmutable::parse('2025-10-01 12:00:00'))
-                ->workerType(WorkerType::Student)
-                ->jointCommissionNumber(202)
                 ->create(),
         ]);
 
@@ -182,11 +167,8 @@ describe('Backoff calculation', function () {
             ->withEmployments([$employmentId])
             ->create();
 
-        DimonaDeclaration::query()->create([
+        DimonaDeclaration::factory()->create([
             'dimona_period_id' => $dimonaPeriod->id,
-            'type' => DimonaDeclarationType::In,
-            'state' => DimonaDeclarationState::Pending,
-            'payload' => [],
             'reference' => 'declaration-ref-1',
             'created_at' => now()->subSeconds(2000),
         ]);
@@ -194,10 +176,6 @@ describe('Backoff calculation', function () {
         $employments = collect([
             EmploymentDataFactory::new()
                 ->id($employmentId)
-                ->startsAt(CarbonImmutable::parse('2025-10-01 07:00:00'))
-                ->endsAt(CarbonImmutable::parse('2025-10-01 12:00:00'))
-                ->workerType(WorkerType::Student)
-                ->jointCommissionNumber(202)
                 ->create(),
         ]);
 
@@ -225,10 +203,7 @@ describe('Backoff calculation', function () {
         ]);
 
         $employments = collect([
-            EmploymentDataFactory::new()
-                ->startsAt(CarbonImmutable::parse('2025-10-01 07:00'))
-                ->endsAt(CarbonImmutable::parse('2025-10-01 12:00'))
-                ->create(),
+            EmploymentDataFactory::new()->create(),
         ]);
 
         $job = new SyncDimonaPeriodsJob(
