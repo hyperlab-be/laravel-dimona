@@ -6,7 +6,7 @@ use Hyperlab\Dimona\Enums\DimonaDeclarationState;
 use Hyperlab\Dimona\Enums\DimonaDeclarationType;
 use Hyperlab\Dimona\Enums\DimonaPeriodState;
 use Hyperlab\Dimona\Enums\WorkerType;
-use Hyperlab\Dimona\Jobs\SyncDimonaPeriods;
+use Hyperlab\Dimona\Jobs\SyncDimonaPeriodsJob;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Tests\Factories\EmploymentDataFactory;
 use Illuminate\Bus\UniqueLock;
@@ -62,7 +62,7 @@ it('cancels a dimona period when employment is removed', function () {
             ->create(),
     ]);
 
-    $job = new SyncDimonaPeriods(
+    $job = new SyncDimonaPeriodsJob(
         $this->employerEnterpriseNumber,
         $this->workerSocialSecurityNumber,
         $this->period,
@@ -81,7 +81,7 @@ it('cancels a dimona period when employment is removed', function () {
         ->and($declaration1->type)->toBe(DimonaDeclarationType::In)
         ->and($declaration1->state)->toBe(DimonaDeclarationState::Pending);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 1);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 
     // Loop 2: Sync pending declaration - still pending
 
@@ -96,7 +96,7 @@ it('cancels a dimona period when employment is removed', function () {
         ->and($dimonaPeriod->dimona_declarations()->count())->toBe(1)
         ->and($declaration1->state)->toBe(DimonaDeclarationState::Pending);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 2);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
     // Loop 3: Declaration is now accepted
 
@@ -111,13 +111,13 @@ it('cancels a dimona period when employment is removed', function () {
         ->and($dimonaPeriod->dimona_declarations()->count())->toBe(1)
         ->and($declaration1->state)->toBe(DimonaDeclarationState::Accepted);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 2);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
     // Loop 4: Employment removed, triggering cancel
 
     (new UniqueLock(app(Cache::class)))->release($job);
 
-    $job = new SyncDimonaPeriods(
+    $job = new SyncDimonaPeriodsJob(
         $this->employerEnterpriseNumber,
         $this->workerSocialSecurityNumber,
         $this->period,
@@ -134,7 +134,7 @@ it('cancels a dimona period when employment is removed', function () {
         ->and($declaration2->type)->toBe(DimonaDeclarationType::Cancel)
         ->and($declaration2->state)->toBe(DimonaDeclarationState::Pending);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 3);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 3);
 
     // Loop 5: Sync cancel declaration - still pending
 
@@ -149,7 +149,7 @@ it('cancels a dimona period when employment is removed', function () {
         ->and($dimonaPeriod->dimona_declarations()->count())->toBe(2)
         ->and($declaration2->state)->toBe(DimonaDeclarationState::Pending);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 4);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 4);
 
     // Loop 6: Cancel declaration is accepted
 
@@ -164,5 +164,5 @@ it('cancels a dimona period when employment is removed', function () {
         ->and($dimonaPeriod->dimona_declarations()->count())->toBe(2)
         ->and($declaration2->state)->toBe(DimonaDeclarationState::Accepted);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 4);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 4);
 });

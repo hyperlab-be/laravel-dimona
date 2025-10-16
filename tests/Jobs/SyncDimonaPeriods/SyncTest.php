@@ -6,7 +6,7 @@ use Hyperlab\Dimona\Enums\DimonaDeclarationState;
 use Hyperlab\Dimona\Enums\DimonaDeclarationType;
 use Hyperlab\Dimona\Enums\DimonaPeriodState;
 use Hyperlab\Dimona\Enums\WorkerType;
-use Hyperlab\Dimona\Jobs\SyncDimonaPeriods;
+use Hyperlab\Dimona\Jobs\SyncDimonaPeriodsJob;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Tests\Factories\EmploymentDataFactory;
 use Illuminate\Bus\UniqueLock;
@@ -52,7 +52,7 @@ describe('Sync pending declarations', function () {
                 ->create(),
         ]);
 
-        $job = new SyncDimonaPeriods(
+        $job = new SyncDimonaPeriodsJob(
             $this->employerEnterpriseNumber,
             $this->workerSocialSecurityNumber,
             $this->period,
@@ -71,13 +71,13 @@ describe('Sync pending declarations', function () {
             ->and($declaration->type)->toBe(DimonaDeclarationType::In)
             ->and($declaration->state)->toBe(DimonaDeclarationState::Pending);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 1);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 
         // Loop 2: Sync pending declaration and mark as accepted
 
         (new UniqueLock(app(Cache::class)))->release($job);
 
-        $job->handle();
+        $job->handle(2);
 
         $dimonaPeriod->refresh();
         $declaration->refresh();
@@ -85,7 +85,7 @@ describe('Sync pending declarations', function () {
         expect($declaration->state)->toBe(DimonaDeclarationState::Accepted)
             ->and($dimonaPeriod->state)->toBe(DimonaPeriodState::Accepted);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 1);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
     });
 
     it('re-dispatches when declarations are still pending after sync', function () {
@@ -119,7 +119,7 @@ describe('Sync pending declarations', function () {
                 ->create(),
         ]);
 
-        $job = new SyncDimonaPeriods(
+        $job = new SyncDimonaPeriodsJob(
             $this->employerEnterpriseNumber,
             $this->workerSocialSecurityNumber,
             $this->period,
@@ -136,7 +136,7 @@ describe('Sync pending declarations', function () {
         expect($dimonaPeriod->state)->toBe(DimonaPeriodState::Pending)
             ->and($declaration->state)->toBe(DimonaDeclarationState::Pending);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 1);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 
         // Loop 2: Sync - still pending, redispatch
 
@@ -148,7 +148,7 @@ describe('Sync pending declarations', function () {
 
         expect($declaration->state)->toBe(DimonaDeclarationState::Pending);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 2);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
         // Loop 3: Sync - still pending, redispatch
 
@@ -160,7 +160,7 @@ describe('Sync pending declarations', function () {
 
         expect($declaration->state)->toBe(DimonaDeclarationState::Pending);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 3);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 3);
 
         // Loop 4: Sync - now accepted, no redispatch
 
@@ -174,7 +174,7 @@ describe('Sync pending declarations', function () {
         expect($declaration->state)->toBe(DimonaDeclarationState::Accepted)
             ->and($dimonaPeriod->state)->toBe(DimonaPeriodState::Accepted);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 3);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 3);
     });
 
     it('handles service down exceptions gracefully', function () {
@@ -207,7 +207,7 @@ describe('Sync pending declarations', function () {
                 ->create(),
         ]);
 
-        $job = new SyncDimonaPeriods(
+        $job = new SyncDimonaPeriodsJob(
             $this->employerEnterpriseNumber,
             $this->workerSocialSecurityNumber,
             $this->period,
@@ -225,7 +225,7 @@ describe('Sync pending declarations', function () {
             ->and($dimonaPeriod->dimona_declarations()->count())->toBe(1)
             ->and($declaration->state)->toBe(DimonaDeclarationState::Pending);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 1);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 
         // Loop 2: Sync - service down, remains pending and redispatches
 
@@ -237,7 +237,7 @@ describe('Sync pending declarations', function () {
 
         expect($declaration->state)->toBe(DimonaDeclarationState::Pending);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 2);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
         // Loop 3: Sync - now accepted
 
@@ -251,7 +251,7 @@ describe('Sync pending declarations', function () {
         expect($declaration->state)->toBe(DimonaDeclarationState::Accepted)
             ->and($dimonaPeriod->state)->toBe(DimonaPeriodState::Accepted);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 2);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
     });
 
     it('marks declarations as failed on invalid API request', function () {
@@ -276,7 +276,7 @@ describe('Sync pending declarations', function () {
                 ->create(),
         ]);
 
-        $job = new SyncDimonaPeriods(
+        $job = new SyncDimonaPeriodsJob(
             $this->employerEnterpriseNumber,
             $this->workerSocialSecurityNumber,
             $this->period,
@@ -294,7 +294,7 @@ describe('Sync pending declarations', function () {
             ->and($dimonaPeriod->dimona_declarations()->count())->toBe(1)
             ->and($declaration->state)->toBe(DimonaDeclarationState::Pending);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 1);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 
         // Loop 2: Sync - invalid request, marked as failed
 
@@ -309,7 +309,7 @@ describe('Sync pending declarations', function () {
             ->and($declaration->anomalies)->toBe(['error' => 'invalid request'])
             ->and($dimonaPeriod->state)->toBe(DimonaPeriodState::Failed);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 2);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
     });
 
     it('handles refused declarations correctly', function () {
@@ -342,7 +342,7 @@ describe('Sync pending declarations', function () {
                 ->create(),
         ]);
 
-        $job = new SyncDimonaPeriods(
+        $job = new SyncDimonaPeriodsJob(
             $this->employerEnterpriseNumber,
             $this->workerSocialSecurityNumber,
             $this->period,
@@ -360,7 +360,7 @@ describe('Sync pending declarations', function () {
             ->and($dimonaPeriod->dimona_declarations()->count())->toBe(1)
             ->and($declaration->state)->toBe(DimonaDeclarationState::Pending);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 1);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 
         // Loop 2: Sync - refused
 
@@ -375,7 +375,7 @@ describe('Sync pending declarations', function () {
             ->and($declaration->anomalies)->toHaveCount(1)
             ->and($dimonaPeriod->state)->toBe(DimonaPeriodState::Refused);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 1);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
     });
 
     it('handles waiting state correctly', function () {
@@ -421,7 +421,7 @@ describe('Sync pending declarations', function () {
                 ->create(),
         ]);
 
-        $job = new SyncDimonaPeriods(
+        $job = new SyncDimonaPeriodsJob(
             $this->employerEnterpriseNumber,
             $this->workerSocialSecurityNumber,
             $this->period,
@@ -439,7 +439,7 @@ describe('Sync pending declarations', function () {
             ->and($dimonaPeriod->dimona_declarations()->count())->toBe(1)
             ->and($declaration->state)->toBe(DimonaDeclarationState::Pending);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 1);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 
         // Loop 2: Sync - waiting state
 
@@ -453,7 +453,7 @@ describe('Sync pending declarations', function () {
         expect($declaration->state)->toBe(DimonaDeclarationState::Waiting)
             ->and($dimonaPeriod->state)->toBe(DimonaPeriodState::Waiting);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 2);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
         // Loop 3: Sync - still waiting, continue to redispatch
 
@@ -467,7 +467,7 @@ describe('Sync pending declarations', function () {
         expect($declaration->state)->toBe(DimonaDeclarationState::Waiting)
             ->and($dimonaPeriod->state)->toBe(DimonaPeriodState::Waiting);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 3);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 3);
 
         // Loop 4: Sync - now accepted
 
@@ -481,7 +481,7 @@ describe('Sync pending declarations', function () {
         expect($declaration->state)->toBe(DimonaDeclarationState::Accepted)
             ->and($dimonaPeriod->state)->toBe(DimonaPeriodState::Accepted);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 3);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 3);
     });
 
     it('handles waiting to refused transition', function () {
@@ -522,7 +522,7 @@ describe('Sync pending declarations', function () {
                 ->create(),
         ]);
 
-        $job = new SyncDimonaPeriods(
+        $job = new SyncDimonaPeriodsJob(
             $this->employerEnterpriseNumber,
             $this->workerSocialSecurityNumber,
             $this->period,
@@ -540,7 +540,7 @@ describe('Sync pending declarations', function () {
             ->and($dimonaPeriod->dimona_declarations()->count())->toBe(1)
             ->and($declaration->state)->toBe(DimonaDeclarationState::Pending);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 1);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 
         // Loop 2: Sync - waiting state
 
@@ -554,7 +554,7 @@ describe('Sync pending declarations', function () {
         expect($declaration->state)->toBe(DimonaDeclarationState::Waiting)
             ->and($dimonaPeriod->state)->toBe(DimonaPeriodState::Waiting);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 2);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
         // Loop 3: Sync - refused
 
@@ -569,7 +569,7 @@ describe('Sync pending declarations', function () {
             ->and($declaration->anomalies)->toHaveCount(1)
             ->and($dimonaPeriod->state)->toBe(DimonaPeriodState::Refused);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 2);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
     });
 
     it('stops re-dispatching when all work is complete', function () {
@@ -600,7 +600,7 @@ describe('Sync pending declarations', function () {
                 ->create(),
         ]);
 
-        $job = new SyncDimonaPeriods(
+        $job = new SyncDimonaPeriodsJob(
             $this->employerEnterpriseNumber,
             $this->workerSocialSecurityNumber,
             $this->period,
@@ -618,7 +618,7 @@ describe('Sync pending declarations', function () {
             ->and($dimonaPeriod->dimona_declarations()->count())->toBe(1)
             ->and($declaration->state)->toBe(DimonaDeclarationState::Pending);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 1);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 
         // Loop 2: Sync pending declaration - still pending
 
@@ -630,7 +630,7 @@ describe('Sync pending declarations', function () {
 
         expect($declaration->state)->toBe(DimonaDeclarationState::Pending);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 2);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
         // Loop 3: Declaration is now accepted
 
@@ -644,7 +644,7 @@ describe('Sync pending declarations', function () {
         expect($declaration->state)->toBe(DimonaDeclarationState::Accepted)
             ->and($dimonaPeriod->state)->toBe(DimonaPeriodState::Accepted);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 2);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
         // Loop 4: Already accepted, no pending work - should not re-dispatch
 
@@ -656,6 +656,6 @@ describe('Sync pending declarations', function () {
 
         expect($dimonaPeriod->state)->toBe(DimonaPeriodState::Accepted);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 2);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
     });
 });

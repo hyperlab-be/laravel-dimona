@@ -6,7 +6,7 @@ use Hyperlab\Dimona\Enums\DimonaDeclarationState;
 use Hyperlab\Dimona\Enums\DimonaDeclarationType;
 use Hyperlab\Dimona\Enums\DimonaPeriodState;
 use Hyperlab\Dimona\Enums\WorkerType;
-use Hyperlab\Dimona\Jobs\SyncDimonaPeriods;
+use Hyperlab\Dimona\Jobs\SyncDimonaPeriodsJob;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Tests\Factories\EmploymentDataFactory;
 use Illuminate\Bus\UniqueLock;
@@ -74,7 +74,7 @@ it('handles accepted with warning state with flexi anomaly', function () {
             ->create(),
     ]);
 
-    $job = new SyncDimonaPeriods(
+    $job = new SyncDimonaPeriodsJob(
         $this->employerEnterpriseNumber,
         $this->workerSocialSecurityNumber,
         $this->period,
@@ -94,7 +94,7 @@ it('handles accepted with warning state with flexi anomaly', function () {
         ->and($declaration1->type)->toBe(DimonaDeclarationType::In)
         ->and($declaration1->state)->toBe(DimonaDeclarationState::Pending);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 1);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 
     // Loop 2: Sync - accepted with warning (flexi requirements not met) -> triggers auto-cancel
 
@@ -113,7 +113,7 @@ it('handles accepted with warning state with flexi anomaly', function () {
         ->and($declaration2->type)->toBe(DimonaDeclarationType::Cancel)
         ->and($declaration2->state)->toBe(DimonaDeclarationState::Pending);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 2);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
     // Loop 3: Sync cancel - still pending
 
@@ -128,7 +128,7 @@ it('handles accepted with warning state with flexi anomaly', function () {
         ->and($dimonaPeriod1->dimona_declarations()->count())->toBe(2)
         ->and($declaration2->state)->toBe(DimonaDeclarationState::Pending);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 3);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 3);
 
     // Loop 4: Cancel accepted + Create new period with corrected worker type
 
@@ -150,7 +150,7 @@ it('handles accepted with warning state with flexi anomaly', function () {
         ->and($declaration3->type)->toBe(DimonaDeclarationType::In)
         ->and($declaration3->state)->toBe(DimonaDeclarationState::Pending);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 4);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 4);
 
     // Loop 5: Sync new declaration - still pending
 
@@ -165,7 +165,7 @@ it('handles accepted with warning state with flexi anomaly', function () {
         ->and($dimonaPeriod2->dimona_declarations()->count())->toBe(1)
         ->and($declaration3->state)->toBe(DimonaDeclarationState::Pending);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 5);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 5);
 
     // Loop 6: New declaration accepted
 
@@ -180,7 +180,7 @@ it('handles accepted with warning state with flexi anomaly', function () {
         ->and($dimonaPeriod2->dimona_declarations()->count())->toBe(1)
         ->and($declaration3->state)->toBe(DimonaDeclarationState::Accepted);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 5);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 5);
 });
 
 it('handles accepted with warning state with student anomaly', function () {
@@ -234,7 +234,7 @@ it('handles accepted with warning state with student anomaly', function () {
             ->create(),
     ]);
 
-    $job = new SyncDimonaPeriods(
+    $job = new SyncDimonaPeriodsJob(
         $this->employerEnterpriseNumber,
         $this->workerSocialSecurityNumber,
         $this->period,
@@ -254,7 +254,7 @@ it('handles accepted with warning state with student anomaly', function () {
         ->and($declaration1->type)->toBe(DimonaDeclarationType::In)
         ->and($declaration1->state)->toBe(DimonaDeclarationState::Pending);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 1);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 
     // Loop 2: Sync - accepted with warning (student requirements not met) -> triggers auto-cancel
 
@@ -273,7 +273,7 @@ it('handles accepted with warning state with student anomaly', function () {
         ->and($declaration2->type)->toBe(DimonaDeclarationType::Cancel)
         ->and($declaration2->state)->toBe(DimonaDeclarationState::Pending);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 2);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
     // Loop 3: Sync cancel - still pending
 
@@ -288,7 +288,7 @@ it('handles accepted with warning state with student anomaly', function () {
         ->and($dimonaPeriod1->dimona_declarations()->count())->toBe(2)
         ->and($declaration2->state)->toBe(DimonaDeclarationState::Pending);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 3);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 3);
 
     // Loop 4: Cancel accepted + Create new period with corrected worker type
 
@@ -310,7 +310,7 @@ it('handles accepted with warning state with student anomaly', function () {
         ->and($declaration3->type)->toBe(DimonaDeclarationType::In)
         ->and($declaration3->state)->toBe(DimonaDeclarationState::Pending);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 4);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 4);
 
     // Loop 5: Sync new declaration - still pending
 
@@ -325,7 +325,7 @@ it('handles accepted with warning state with student anomaly', function () {
         ->and($dimonaPeriod2->dimona_declarations()->count())->toBe(1)
         ->and($declaration3->state)->toBe(DimonaDeclarationState::Pending);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 5);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 5);
 
     // Loop 6: New declaration accepted
 
@@ -340,7 +340,7 @@ it('handles accepted with warning state with student anomaly', function () {
         ->and($dimonaPeriod2->dimona_declarations()->count())->toBe(1)
         ->and($declaration3->state)->toBe(DimonaDeclarationState::Accepted);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 5);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 5);
 });
 
 it('handles accepted with warning state without flexi or student anomaly', function () {
@@ -373,7 +373,7 @@ it('handles accepted with warning state without flexi or student anomaly', funct
             ->create(),
     ]);
 
-    $job = new SyncDimonaPeriods(
+    $job = new SyncDimonaPeriodsJob(
         $this->employerEnterpriseNumber,
         $this->workerSocialSecurityNumber,
         $this->period,
@@ -393,7 +393,7 @@ it('handles accepted with warning state without flexi or student anomaly', funct
         ->and($declaration->type)->toBe(DimonaDeclarationType::In)
         ->and($declaration->state)->toBe(DimonaDeclarationState::Pending);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 1);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 
     // Loop 2: Sync - accepted with warning but no auto-cancel anomaly, should become Accepted
 
@@ -409,5 +409,5 @@ it('handles accepted with warning state without flexi or student anomaly', funct
         ->and($dimonaPeriod->state)->toBe(DimonaPeriodState::Accepted)
         ->and($dimonaPeriod->dimona_declarations()->count())->toBe(1);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 1);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 });

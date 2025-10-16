@@ -1,6 +1,5 @@
 <?php
 
-use Carbon\CarbonImmutable;
 use Hyperlab\Dimona\Actions\DimonaPeriod\UpdateDimonaPeriodState;
 use Hyperlab\Dimona\Enums\DimonaDeclarationState;
 use Hyperlab\Dimona\Enums\DimonaDeclarationType;
@@ -17,8 +16,10 @@ beforeEach(function () {
         'worker_social_security_number' => '12345678901',
         'joint_commission_number' => 200,
         'worker_type' => WorkerType::Student,
-        'starts_at' => CarbonImmutable::parse('2025-10-01 08:00'),
-        'ends_at' => CarbonImmutable::parse('2025-10-01 17:00'),
+        'start_date' => '2025-10-01',
+        'start_hour' => '0800',
+        'end_date' => '2025-10-01',
+        'end_hour' => '1700',
         'state' => DimonaPeriodState::New,
     ]);
 });

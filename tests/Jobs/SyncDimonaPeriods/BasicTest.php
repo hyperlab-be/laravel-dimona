@@ -5,7 +5,7 @@ use Carbon\CarbonPeriodImmutable;
 use Hyperlab\Dimona\Enums\DimonaDeclarationState;
 use Hyperlab\Dimona\Enums\DimonaDeclarationType;
 use Hyperlab\Dimona\Enums\WorkerType;
-use Hyperlab\Dimona\Jobs\SyncDimonaPeriods;
+use Hyperlab\Dimona\Jobs\SyncDimonaPeriodsJob;
 use Hyperlab\Dimona\Models\DimonaDeclaration;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Tests\Factories\EmploymentDataFactory;
@@ -26,14 +26,14 @@ it('can be instantiated', function () {
         EmploymentDataFactory::new()->create(),
     ]);
 
-    $job = new SyncDimonaPeriods(
+    $job = new SyncDimonaPeriodsJob(
         $this->employerEnterpriseNumber,
         $this->workerSocialSecurityNumber,
         $this->period,
         $employments
     );
 
-    expect($job)->toBeInstanceOf(SyncDimonaPeriods::class)
+    expect($job)->toBeInstanceOf(SyncDimonaPeriodsJob::class)
         ->and($job->employerEnterpriseNumber)->toBe($this->employerEnterpriseNumber)
         ->and($job->workerSocialSecurityNumber)->toBe($this->workerSocialSecurityNumber)
         ->and($job->clientId)->toBeNull();
@@ -45,7 +45,7 @@ it('can be instantiated with a client ID', function () {
     ]);
 
     $clientId = 'test-client';
-    $job = new SyncDimonaPeriods(
+    $job = new SyncDimonaPeriodsJob(
         $this->employerEnterpriseNumber,
         $this->workerSocialSecurityNumber,
         $this->period,
@@ -61,7 +61,7 @@ it('returns unique ID based on employer and worker', function () {
         EmploymentDataFactory::new()->create(),
     ]);
 
-    $job = new SyncDimonaPeriods(
+    $job = new SyncDimonaPeriodsJob(
         $this->employerEnterpriseNumber,
         $this->workerSocialSecurityNumber,
         $this->period,
@@ -103,7 +103,7 @@ describe('Backoff calculation', function () {
                 ->create(),
         ]);
 
-        $job = new SyncDimonaPeriods(
+        $job = new SyncDimonaPeriodsJob(
             $this->employerEnterpriseNumber,
             $this->workerSocialSecurityNumber,
             $this->period,
@@ -112,7 +112,7 @@ describe('Backoff calculation', function () {
 
         $job->handle();
 
-        Queue::assertPushed(SyncDimonaPeriods::class, function ($job) {
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, function ($job) {
             return $job->delay === 1;
         });
     });
@@ -152,7 +152,7 @@ describe('Backoff calculation', function () {
                 ->create(),
         ]);
 
-        $job = new SyncDimonaPeriods(
+        $job = new SyncDimonaPeriodsJob(
             $this->employerEnterpriseNumber,
             $this->workerSocialSecurityNumber,
             $this->period,
@@ -161,7 +161,7 @@ describe('Backoff calculation', function () {
 
         $job->handle();
 
-        Queue::assertPushed(SyncDimonaPeriods::class, function ($job) {
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, function ($job) {
             return $job->delay === 60;
         });
     });
@@ -201,7 +201,7 @@ describe('Backoff calculation', function () {
                 ->create(),
         ]);
 
-        $job = new SyncDimonaPeriods(
+        $job = new SyncDimonaPeriodsJob(
             $this->employerEnterpriseNumber,
             $this->workerSocialSecurityNumber,
             $this->period,
@@ -210,7 +210,7 @@ describe('Backoff calculation', function () {
 
         $job->handle();
 
-        Queue::assertPushed(SyncDimonaPeriods::class, function ($job) {
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, function ($job) {
             return $job->delay === 3600;
         });
     });
@@ -231,7 +231,7 @@ describe('Backoff calculation', function () {
                 ->create(),
         ]);
 
-        $job = new SyncDimonaPeriods(
+        $job = new SyncDimonaPeriodsJob(
             $this->employerEnterpriseNumber,
             $this->workerSocialSecurityNumber,
             $this->period,
@@ -240,7 +240,7 @@ describe('Backoff calculation', function () {
 
         $job->handle();
 
-        Queue::assertPushed(SyncDimonaPeriods::class, function ($job) {
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, function ($job) {
             return $job->delay === 1; // Recent pending declaration gets 1s delay
         });
     });

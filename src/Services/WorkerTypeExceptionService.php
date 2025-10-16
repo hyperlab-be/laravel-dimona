@@ -21,7 +21,7 @@ class WorkerTypeExceptionService
     public function resolveWorkerType(
         string $workerSocialSecurityNumber, WorkerType $workerType, CarbonImmutable $employmentStartsAt
     ): WorkerType {
-        if ($workerType === WorkerType::Flexi || $workerType === WorkerType::Student) {
+        if ($workerType === WorkerType::Flexi) {
             $exceptionExists = DimonaWorkerTypeException::query()
                 ->where('social_security_number', $workerSocialSecurityNumber)
                 ->where('starts_at', '<=', $employmentStartsAt)
@@ -57,11 +57,13 @@ class WorkerTypeExceptionService
         /** @var DimonaPeriod $dimonaPeriod */
         $dimonaPeriod = $declaration->dimona_period;
 
+        $startDate = CarbonImmutable::parse($dimonaPeriod->start_date);
+
         return DimonaWorkerTypeException::query()->create([
             'social_security_number' => $dimonaPeriod->worker_social_security_number,
             'worker_type' => WorkerType::Flexi,
-            'starts_at' => $dimonaPeriod->starts_at->startOfQuarter(),
-            'ends_at' => $dimonaPeriod->starts_at->endOfQuarter(),
+            'starts_at' => $startDate->startOfQuarter(),
+            'ends_at' => $startDate->endOfQuarter(),
         ]);
     }
 
@@ -73,11 +75,13 @@ class WorkerTypeExceptionService
         /** @var DimonaPeriod $dimonaPeriod */
         $dimonaPeriod = $declaration->dimona_period;
 
+        $startDate = CarbonImmutable::parse($dimonaPeriod->start_date);
+
         return DimonaWorkerTypeException::query()->create([
             'social_security_number' => $dimonaPeriod->worker_social_security_number,
             'worker_type' => WorkerType::Student,
-            'starts_at' => $dimonaPeriod->starts_at->startOfYear(),
-            'ends_at' => $dimonaPeriod->starts_at->endOfYear(),
+            'starts_at' => $startDate->startOfYear(),
+            'ends_at' => $startDate->endOfYear(),
         ]);
     }
 }

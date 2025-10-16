@@ -9,7 +9,7 @@ use Hyperlab\Dimona\Enums\WorkerType;
 use Hyperlab\Dimona\Services\WorkerTypeExceptionService;
 use Illuminate\Support\Collection;
 
-class ComputeDimonaPeriods
+class ComputeExpectedDimonaPeriods
 {
     private const string TIMEZONE = 'Europe/Brussels';
 

@@ -6,7 +6,7 @@ use Hyperlab\Dimona\Enums\DimonaDeclarationState;
 use Hyperlab\Dimona\Enums\DimonaDeclarationType;
 use Hyperlab\Dimona\Enums\DimonaPeriodState;
 use Hyperlab\Dimona\Enums\WorkerType;
-use Hyperlab\Dimona\Jobs\SyncDimonaPeriods;
+use Hyperlab\Dimona\Jobs\SyncDimonaPeriodsJob;
 use Hyperlab\Dimona\Models\DimonaDeclaration;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Tests\Factories\EmploymentDataFactory;
@@ -44,7 +44,7 @@ describe('Failed declaration handling', function () {
                 ->create(),
         ]);
 
-        $job = new SyncDimonaPeriods(
+        $job = new SyncDimonaPeriodsJob(
             $this->employerEnterpriseNumber,
             $this->workerSocialSecurityNumber,
             $this->period,
@@ -61,7 +61,7 @@ describe('Failed declaration handling', function () {
             ->and($declaration)->not->toBeNull()
             ->and($declaration->state)->toBe(DimonaDeclarationState::Failed);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 1);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
     });
 
     it('handles failed update declaration and period remains in previous state', function () {
@@ -92,7 +92,7 @@ describe('Failed declaration handling', function () {
                 ->create(),
         ]);
 
-        $job = new SyncDimonaPeriods(
+        $job = new SyncDimonaPeriodsJob(
             $this->employerEnterpriseNumber,
             $this->workerSocialSecurityNumber,
             $this->period,
@@ -111,7 +111,7 @@ describe('Failed declaration handling', function () {
             ->and($declaration1->type)->toBe(DimonaDeclarationType::In)
             ->and($declaration1->state)->toBe(DimonaDeclarationState::Pending);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 1);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 
         // Loop 2: Declaration accepted
 
@@ -126,7 +126,7 @@ describe('Failed declaration handling', function () {
             ->and($dimonaPeriod->dimona_declarations()->count())->toBe(1)
             ->and($declaration1->state)->toBe(DimonaDeclarationState::Accepted);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 1);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 
         // Loop 3: Trigger update which fails
 
@@ -142,7 +142,7 @@ describe('Failed declaration handling', function () {
                 ->create(),
         ]);
 
-        $job = new SyncDimonaPeriods(
+        $job = new SyncDimonaPeriodsJob(
             $this->employerEnterpriseNumber,
             $this->workerSocialSecurityNumber,
             $this->period,
@@ -160,7 +160,7 @@ describe('Failed declaration handling', function () {
             ->and($updateDeclaration->type)->toBe(DimonaDeclarationType::Update)
             ->and($updateDeclaration->state)->toBe(DimonaDeclarationState::Failed);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 2);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
     });
 
     it('allows retry after failed create with corrected data', function () {
@@ -191,7 +191,7 @@ describe('Failed declaration handling', function () {
                 ->create(),
         ]);
 
-        $job = new SyncDimonaPeriods(
+        $job = new SyncDimonaPeriodsJob(
             $this->employerEnterpriseNumber,
             $this->workerSocialSecurityNumber,
             $this->period,
@@ -209,13 +209,13 @@ describe('Failed declaration handling', function () {
             ->and($dimonaPeriod->dimona_declarations()->count())->toBe(1)
             ->and($failedDeclaration->state)->toBe(DimonaDeclarationState::Failed);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 1);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 
         // Loop 2: Retry with corrected data (simulated by running job again)
 
         (new UniqueLock(app(Cache::class)))->release($job);
 
-        $job = new SyncDimonaPeriods(
+        $job = new SyncDimonaPeriodsJob(
             $this->employerEnterpriseNumber,
             $this->workerSocialSecurityNumber,
             $this->period,
@@ -233,7 +233,7 @@ describe('Failed declaration handling', function () {
             ->and($newDeclaration->type)->toBe(DimonaDeclarationType::In)
             ->and($newDeclaration->state)->toBe(DimonaDeclarationState::Pending);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 2);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
         // Loop 3: Sync successful declaration
 
@@ -248,7 +248,7 @@ describe('Failed declaration handling', function () {
             ->and($dimonaPeriod2->dimona_declarations()->count())->toBe(1)
             ->and($newDeclaration->state)->toBe(DimonaDeclarationState::Accepted);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 2);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
     });
 
     it('handles multiple consecutive failures', function () {
@@ -275,7 +275,7 @@ describe('Failed declaration handling', function () {
 
         // Loop 1: First failure
 
-        $job = new SyncDimonaPeriods(
+        $job = new SyncDimonaPeriodsJob(
             $this->employerEnterpriseNumber,
             $this->workerSocialSecurityNumber,
             $this->period,
@@ -290,13 +290,13 @@ describe('Failed declaration handling', function () {
             ->and($dimonaPeriod->dimona_declarations()->count())->toBe(1)
             ->and(DimonaDeclaration::query()->where('state', DimonaDeclarationState::Failed)->count())->toBe(1);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 1);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 
         // Loop 2: Second failure
 
         (new UniqueLock(app(Cache::class)))->release($job);
 
-        $job = new SyncDimonaPeriods(
+        $job = new SyncDimonaPeriodsJob(
             $this->employerEnterpriseNumber,
             $this->workerSocialSecurityNumber,
             $this->period,
@@ -311,13 +311,13 @@ describe('Failed declaration handling', function () {
             ->and($dimonaPeriod2->dimona_declarations()->count())->toBe(1)
             ->and(DimonaDeclaration::query()->where('state', DimonaDeclarationState::Failed)->count())->toBe(2);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 2);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
         // Loop 3: Third failure
 
         (new UniqueLock(app(Cache::class)))->release($job);
 
-        $job = new SyncDimonaPeriods(
+        $job = new SyncDimonaPeriodsJob(
             $this->employerEnterpriseNumber,
             $this->workerSocialSecurityNumber,
             $this->period,
@@ -332,6 +332,6 @@ describe('Failed declaration handling', function () {
             ->and($dimonaPeriod3->dimona_declarations()->count())->toBe(1)
             ->and(DimonaDeclaration::query()->where('state', DimonaDeclarationState::Failed)->count())->toBe(3);
 
-        Queue::assertPushed(SyncDimonaPeriods::class, 3);
+        Queue::assertPushed(SyncDimonaPeriodsJob::class, 3);
     });
 });

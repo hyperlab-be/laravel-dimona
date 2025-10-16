@@ -7,7 +7,7 @@ use Hyperlab\Dimona\Data\EmploymentLocationData;
 use Hyperlab\Dimona\Enums\EmploymentLocationCountry;
 use Hyperlab\Dimona\Enums\WorkerType;
 use Hyperlab\Dimona\Facades\Dimona;
-use Hyperlab\Dimona\Jobs\SyncDimonaPeriods;
+use Hyperlab\Dimona\Jobs\SyncDimonaPeriodsJob;
 use Illuminate\Support\Facades\Queue;
 
 it('can declare dimona for employments', function () {
@@ -40,7 +40,7 @@ it('can declare dimona for employments', function () {
 
     Dimona::declare($employerEnterpriseNumber, $workerSocialSecurityNumber, $period, $employments);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, function (SyncDimonaPeriods $job) use ($employerEnterpriseNumber, $workerSocialSecurityNumber, $period, $employments) {
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, function (SyncDimonaPeriodsJob $job) use ($employerEnterpriseNumber, $workerSocialSecurityNumber, $period, $employments) {
         return $job->employerEnterpriseNumber === $employerEnterpriseNumber
             && $job->workerSocialSecurityNumber === $workerSocialSecurityNumber
             && $job->period->equalTo($period)
@@ -80,7 +80,7 @@ it('can declare dimona with a specific client', function () {
 
     Dimona::client($clientId)->declare($employerEnterpriseNumber, $workerSocialSecurityNumber, $period, $employments);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, function (SyncDimonaPeriods $job) use ($employerEnterpriseNumber, $workerSocialSecurityNumber, $period, $employments, $clientId) {
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, function (SyncDimonaPeriodsJob $job) use ($employerEnterpriseNumber, $workerSocialSecurityNumber, $period, $employments, $clientId) {
         return $job->employerEnterpriseNumber === $employerEnterpriseNumber
             && $job->workerSocialSecurityNumber === $workerSocialSecurityNumber
             && $job->period->equalTo($period)

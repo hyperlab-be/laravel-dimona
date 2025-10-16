@@ -3,6 +3,7 @@
 namespace Hyperlab\Dimona\Database\Factories;
 
 use Hyperlab\Dimona\Enums\DimonaPeriodState;
+use Hyperlab\Dimona\Enums\EmploymentLocationCountry;
 use Hyperlab\Dimona\Enums\WorkerType;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -29,7 +30,7 @@ class DimonaPeriodFactory extends Factory
             'location_box_number' => null,
             'location_postal_code' => '1000',
             'location_place' => 'Brussels',
-            'location_country' => 'BE',
+            'location_country' => EmploymentLocationCountry::Belgium,
             'state' => DimonaPeriodState::Pending,
         ];
     }

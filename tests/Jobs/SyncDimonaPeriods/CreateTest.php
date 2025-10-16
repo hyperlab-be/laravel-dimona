@@ -6,7 +6,7 @@ use Hyperlab\Dimona\Enums\DimonaDeclarationState;
 use Hyperlab\Dimona\Enums\DimonaDeclarationType;
 use Hyperlab\Dimona\Enums\DimonaPeriodState;
 use Hyperlab\Dimona\Enums\WorkerType;
-use Hyperlab\Dimona\Jobs\SyncDimonaPeriods;
+use Hyperlab\Dimona\Jobs\SyncDimonaPeriodsJob;
 use Hyperlab\Dimona\Models\DimonaDeclaration;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Tests\Factories\EmploymentDataFactory;
@@ -50,7 +50,7 @@ it('creates a new dimona period when no periods exist', function () {
             ->create(),
     ]);
 
-    $job = new SyncDimonaPeriods(
+    $job = new SyncDimonaPeriodsJob(
         $this->employerEnterpriseNumber,
         $this->workerSocialSecurityNumber,
         $this->period,
@@ -74,7 +74,7 @@ it('creates a new dimona period when no periods exist', function () {
         ->and($declaration->state)->toBe(DimonaDeclarationState::Pending)
         ->and($declaration->reference)->toBe('new-declaration-ref');
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 1);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 
     // Loop 2: Sync pending declaration - accepted
 
@@ -88,7 +88,7 @@ it('creates a new dimona period when no periods exist', function () {
     expect($declaration->state)->toBe(DimonaDeclarationState::Accepted)
         ->and($dimonaPeriod->state)->toBe(DimonaPeriodState::Accepted);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 1);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 });
 
 it('creates multiple dimona periods for different time slots', function () {
@@ -135,7 +135,7 @@ it('creates multiple dimona periods for different time slots', function () {
             ->create(),
     ]);
 
-    $job = new SyncDimonaPeriods(
+    $job = new SyncDimonaPeriodsJob(
         $this->employerEnterpriseNumber,
         $this->workerSocialSecurityNumber,
         $this->period,
@@ -149,7 +149,7 @@ it('creates multiple dimona periods for different time slots', function () {
     expect(DimonaPeriod::count())->toBe(2)
         ->and(DimonaDeclaration::count())->toBe(2);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 1);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 
     // Loop 2: Sync both pending declarations - still pending
 
@@ -161,7 +161,7 @@ it('creates multiple dimona periods for different time slots', function () {
     expect($declarations->where('reference', 'declaration-ref-1')->first()->state)->toBe(DimonaDeclarationState::Pending)
         ->and($declarations->where('reference', 'declaration-ref-2')->first()->state)->toBe(DimonaDeclarationState::Pending);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 2);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
     // Loop 3: Both declarations accepted
 
@@ -172,7 +172,7 @@ it('creates multiple dimona periods for different time slots', function () {
     expect(DimonaDeclaration::query()->where('state', DimonaDeclarationState::Accepted)->count())->toBe(2)
         ->and(DimonaPeriod::query()->where('state', DimonaPeriodState::Accepted)->count())->toBe(2);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 2);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 });
 
 it('handles 500 API exceptions when creating declarations', function () {
@@ -191,7 +191,7 @@ it('handles 500 API exceptions when creating declarations', function () {
             ->create(),
     ]);
 
-    $job = new SyncDimonaPeriods(
+    $job = new SyncDimonaPeriodsJob(
         $this->employerEnterpriseNumber,
         $this->workerSocialSecurityNumber,
         $this->period,
@@ -205,7 +205,7 @@ it('handles 500 API exceptions when creating declarations', function () {
         ->and($declaration->state)->toBe(DimonaDeclarationState::Failed)
         ->and($declaration->anomalies)->toBe(['error' => 'Internal server error']);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 1);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 });
 
 it('handles 400 bad request when creating declarations', function () {
@@ -224,7 +224,7 @@ it('handles 400 bad request when creating declarations', function () {
             ->create(),
     ]);
 
-    $job = new SyncDimonaPeriods(
+    $job = new SyncDimonaPeriodsJob(
         $this->employerEnterpriseNumber,
         $this->workerSocialSecurityNumber,
         $this->period,
@@ -238,7 +238,7 @@ it('handles 400 bad request when creating declarations', function () {
         ->and($declaration->state)->toBe(DimonaDeclarationState::Failed)
         ->and($declaration->anomalies)->toHaveKey('error');
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 1);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 });
 
 it('handles 422 unprocessable entity when creating declarations', function () {
@@ -260,7 +260,7 @@ it('handles 422 unprocessable entity when creating declarations', function () {
             ->create(),
     ]);
 
-    $job = new SyncDimonaPeriods(
+    $job = new SyncDimonaPeriodsJob(
         $this->employerEnterpriseNumber,
         $this->workerSocialSecurityNumber,
         $this->period,
@@ -274,7 +274,7 @@ it('handles 422 unprocessable entity when creating declarations', function () {
         ->and($declaration->state)->toBe(DimonaDeclarationState::Failed)
         ->and($declaration->anomalies)->toHaveKey('message');
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 1);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 });
 
 it('handles multiple pending declarations across different periods', function () {
@@ -324,7 +324,7 @@ it('handles multiple pending declarations across different periods', function ()
             ->create(),
     ]);
 
-    $job = new SyncDimonaPeriods(
+    $job = new SyncDimonaPeriodsJob(
         $this->employerEnterpriseNumber,
         $this->workerSocialSecurityNumber,
         $this->period,
@@ -338,7 +338,7 @@ it('handles multiple pending declarations across different periods', function ()
     expect(DimonaPeriod::query()->count())->toBe(2)
         ->and(DimonaDeclaration::query()->count())->toBe(2);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 1);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 
     // Loop 2: Sync both declarations - still pending
 
@@ -350,7 +350,7 @@ it('handles multiple pending declarations across different periods', function ()
     expect($declarations->where('reference', 'declaration-ref-1')->first()->state)->toBe(DimonaDeclarationState::Pending)
         ->and($declarations->where('reference', 'declaration-ref-2')->first()->state)->toBe(DimonaDeclarationState::Pending);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 2);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
     // Loop 3: First is still pending, second is accepted
 
@@ -362,7 +362,7 @@ it('handles multiple pending declarations across different periods', function ()
     expect($declarations->where('reference', 'declaration-ref-1')->first()->state)->toBe(DimonaDeclarationState::Pending)
         ->and($declarations->where('reference', 'declaration-ref-2')->first()->state)->toBe(DimonaDeclarationState::Accepted);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 3);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 3);
 
     // Loop 4: First is now accepted too
 
@@ -372,7 +372,7 @@ it('handles multiple pending declarations across different periods', function ()
 
     expect(DimonaDeclaration::query()->where('state', DimonaDeclarationState::Accepted)->count())->toBe(2);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 3);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 3);
 });
 
 it('keeps existing dimona period when employment switches but details stay the same', function () {
@@ -404,7 +404,7 @@ it('keeps existing dimona period when employment switches but details stay the s
             ->create(),
     ]);
 
-    $job = new SyncDimonaPeriods(
+    $job = new SyncDimonaPeriodsJob(
         $this->employerEnterpriseNumber,
         $this->workerSocialSecurityNumber,
         $this->period,
@@ -423,7 +423,7 @@ it('keeps existing dimona period when employment switches but details stay the s
         ->and($declaration->type)->toBe(DimonaDeclarationType::In)
         ->and($declaration->state)->toBe(DimonaDeclarationState::Pending);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 1);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 
     // Loop 2: Sync pending declaration - still pending
 
@@ -438,7 +438,7 @@ it('keeps existing dimona period when employment switches but details stay the s
         ->and($dimonaPeriod->dimona_declarations()->count())->toBe(1)
         ->and($declaration->state)->toBe(DimonaDeclarationState::Pending);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 2);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
     // Loop 3: Declaration is now accepted
 
@@ -454,7 +454,7 @@ it('keeps existing dimona period when employment switches but details stay the s
         ->and($dimonaPeriod->dimona_period_employments->pluck('employment_id')->toArray())->toBe(['emp-1'])
         ->and($declaration->state)->toBe(DimonaDeclarationState::Accepted);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 2);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
     // Loop 4: Employment switches
 
@@ -470,7 +470,7 @@ it('keeps existing dimona period when employment switches but details stay the s
             ->create(),
     ]);
 
-    $job = new SyncDimonaPeriods(
+    $job = new SyncDimonaPeriodsJob(
         $this->employerEnterpriseNumber,
         $this->workerSocialSecurityNumber,
         $this->period,
@@ -485,5 +485,5 @@ it('keeps existing dimona period when employment switches but details stay the s
         ->and($dimonaPeriod->dimona_declarations()->count())->toBe(1)
         ->and($dimonaPeriod->dimona_period_employments->pluck('employment_id')->toArray())->toBe(['emp-2']);
 
-    Queue::assertPushed(SyncDimonaPeriods::class, 2);
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 });
