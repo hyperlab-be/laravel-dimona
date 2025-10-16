@@ -64,6 +64,11 @@ class SyncDimonaPeriodsWithExpectations
     private function findLinkedPeriod(DimonaPeriodData $data): ?DimonaPeriod
     {
         return DimonaPeriod::query()
+            ->where('employer_enterprise_number', $this->employerEnterpriseNumber)
+            ->where('worker_social_security_number', $this->workerSocialSecurityNumber)
+            ->where('worker_type', $data->workerType)
+            ->where('joint_commission_number', $data->jointCommissionNumber)
+            ->where('start_date', $data->startDate)
             ->whereHas('dimona_period_employments', function ($query) use ($data) {
                 $query->whereIn('employment_id', $data->employmentIds);
             })
