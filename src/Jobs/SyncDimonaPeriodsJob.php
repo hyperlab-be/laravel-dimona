@@ -4,7 +4,6 @@ namespace Hyperlab\Dimona\Jobs;
 
 use Carbon\CarbonPeriodImmutable;
 use Hyperlab\Dimona\Actions\DimonaPeriod\ComputeExpectedDimonaPeriods;
-use Hyperlab\Dimona\Actions\DimonaPeriod\DetachDeletedEmploymentsFromDimonaPeriods;
 use Hyperlab\Dimona\Actions\DimonaPeriod\SyncDimonaPeriodsWithExpectations;
 use Hyperlab\Dimona\Data\EmploymentData;
 use Hyperlab\Dimona\Enums\DimonaDeclarationState;
@@ -54,16 +53,7 @@ class SyncDimonaPeriodsJob implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        // Step 2: Remove the deleted employment IDs from actual dimona periods
-
-        DetachDeletedEmploymentsFromDimonaPeriods::new()->execute(
-            employerEnterpriseNumber: $this->employerEnterpriseNumber,
-            workerSocialSecurityNumber: $this->workerSocialSecurityNumber,
-            period: $this->period,
-            employments: $this->employments,
-        );
-
-        // Step 3: Compute expected dimona periods
+        // Step 2: Compute expected dimona periods
 
         $expectedDimonaPeriods = ComputeExpectedDimonaPeriods::new()->execute(
             employerEnterpriseNumber: $this->employerEnterpriseNumber,
@@ -71,15 +61,16 @@ class SyncDimonaPeriodsJob implements ShouldBeUnique, ShouldQueue
             employments: $this->employments
         );
 
-        // Step 4: Link expected dimona periods to actual dimona periods
+        // Step 3: Link expected dimona periods to actual dimona periods
 
         SyncDimonaPeriodsWithExpectations::new()->execute(
             employerEnterpriseNumber: $this->employerEnterpriseNumber,
             workerSocialSecurityNumber: $this->workerSocialSecurityNumber,
+            period: $this->period,
             expectedDimonaPeriods: $expectedDimonaPeriods
         );
 
-        // Step 5: Cancel actual dimona periods (without employment ids | with state accepted with warning)
+        // Step 4: Cancel actual dimona periods (without employment ids | with state accepted with warning)
 
         if ($this->cancelDimonaPeriods()) {
             $this->redispatchJob();

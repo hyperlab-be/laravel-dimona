@@ -2,6 +2,7 @@
 
 namespace Hyperlab\Dimona\Actions\DimonaPeriod;
 
+use Carbon\CarbonPeriodImmutable;
 use Hyperlab\Dimona\Data\DimonaPeriodData;
 use Hyperlab\Dimona\Enums\DimonaPeriodState;
 use Hyperlab\Dimona\Models\DimonaPeriod;
@@ -14,6 +15,8 @@ class SyncDimonaPeriodsWithExpectations
 
     private string $workerSocialSecurityNumber;
 
+    private CarbonPeriodImmutable $period;
+
     public static function new(): self
     {
         return new self;
@@ -25,12 +28,37 @@ class SyncDimonaPeriodsWithExpectations
      * @param  Collection<DimonaPeriodData>  $expectedDimonaPeriods
      */
     public function execute(
-        string $employerEnterpriseNumber, string $workerSocialSecurityNumber, Collection $expectedDimonaPeriods
+        string $employerEnterpriseNumber,
+        string $workerSocialSecurityNumber,
+        CarbonPeriodImmutable $period,
+        Collection $expectedDimonaPeriods
     ): void {
         $this->employerEnterpriseNumber = $employerEnterpriseNumber;
         $this->workerSocialSecurityNumber = $workerSocialSecurityNumber;
+        $this->period = $period;
+
+        $this->detachDeletedEmploymentsFromDimonaPeriods($expectedDimonaPeriods);
 
         $expectedDimonaPeriods->each(fn (DimonaPeriodData $data) => $this->syncPeriod($data));
+    }
+
+    private function detachDeletedEmploymentsFromDimonaPeriods(Collection $expectedDimonaPeriods): void
+    {
+        $employmentIds = $expectedDimonaPeriods
+            ->flatMap(fn (DimonaPeriodData $data) => $data->employmentIds)
+            ->toArray();
+
+        DB::table('dimona_period_employment')
+            ->whereNotIn('employment_id', $employmentIds)
+            ->whereIn('dimona_period_id', function ($query) {
+                $query
+                    ->select('id')
+                    ->from('dimona_periods')
+                    ->where('employer_enterprise_number', $this->employerEnterpriseNumber)
+                    ->where('worker_social_security_number', $this->workerSocialSecurityNumber)
+                    ->whereBetween('start_date', [$this->period->start->format('Y-m-d'), $this->period->end->format('Y-m-d')])
+            })
+            ->delete();
     }
 
     /**
