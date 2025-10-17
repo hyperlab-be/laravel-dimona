@@ -1,5 +1,6 @@
 <?php
 
+use Carbon\CarbonPeriodImmutable;
 use Hyperlab\Dimona\Actions\DimonaPeriod\SyncDimonaPeriodsWithExpectations;
 use Hyperlab\Dimona\Data\DimonaPeriodData;
 use Hyperlab\Dimona\Data\EmploymentLocationData;
@@ -35,9 +36,9 @@ function makeExpectedPeriod(array $overrides = []): DimonaPeriodData
         'jointCommissionNumber' => 304,
         'workerType' => WorkerType::Flexi,
         'startDate' => '2025-10-01',
-        'startHour' => '0800',
+        'startHour' => '08:00',
         'endDate' => '2025-10-01',
-        'endHour' => '1200',
+        'endHour' => '12:00',
         'numberOfHours' => null,
         'location' => test()->defaultLocation,
     ];
@@ -64,6 +65,7 @@ function syncPeriods(Collection $expectedPeriods): void
     SyncDimonaPeriodsWithExpectations::new()->execute(
         employerEnterpriseNumber: test()->employerNumber,
         workerSocialSecurityNumber: test()->workerSsn,
+        period: CarbonPeriodImmutable::create('2025-09-01', '2025-11-01'),
         expectedDimonaPeriods: $expectedPeriods
     );
 }
@@ -86,9 +88,9 @@ function makePeriod(array $overrides = [], array $employmentIds = []): DimonaPer
         'joint_commission_number' => 304,
         'worker_type' => WorkerType::Flexi,
         'start_date' => '2025-10-01',
-        'start_hour' => '0800',
+        'start_hour' => '08:00',
         'end_date' => '2025-10-01',
-        'end_hour' => '1200',
+        'end_hour' => '12:00',
         'state' => DimonaPeriodState::Accepted,
     ];
 
