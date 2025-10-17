@@ -57,9 +57,9 @@ class DimonaPayloadBuilder
 
         if ($dimonaPeriod->worker_type === WorkerType::Flexi) {
             $payload['dimonaIn']['startDate'] = $dimonaPeriod->start_date;
-            $payload['dimonaIn']['startHour'] = $dimonaPeriod->start_hour;
+            $payload['dimonaIn']['startHour'] = Str::remove(':', $dimonaPeriod->start_hour);
             $payload['dimonaIn']['endDate'] = $dimonaPeriod->end_date;
-            $payload['dimonaIn']['endHour'] = $dimonaPeriod->end_hour;
+            $payload['dimonaIn']['endHour'] = Str::remove(':', $dimonaPeriod->end_hour);
         } else {
             $payload['dimonaIn']['startDate'] = $dimonaPeriod->start_date;
             $payload['dimonaIn']['endDate'] = $dimonaPeriod->start_date;
@@ -82,9 +82,9 @@ class DimonaPayloadBuilder
 
         if ($dimonaPeriod->worker_type === WorkerType::Flexi) {
             $payload['dimonaUpdate']['startDate'] = $dimonaPeriod->start_date;
-            $payload['dimonaUpdate']['startHour'] = $dimonaPeriod->start_hour;
+            $payload['dimonaUpdate']['startHour'] = Str::remove(':', $dimonaPeriod->start_hour);
             $payload['dimonaUpdate']['endDate'] = $dimonaPeriod->end_date;
-            $payload['dimonaUpdate']['endHour'] = $dimonaPeriod->end_hour;
+            $payload['dimonaUpdate']['endHour'] = Str::remove(':', $dimonaPeriod->end_hour);
         } else {
             $payload['dimonaUpdate']['startDate'] = $dimonaPeriod->start_date;
             $payload['dimonaUpdate']['endDate'] = $dimonaPeriod->start_date;

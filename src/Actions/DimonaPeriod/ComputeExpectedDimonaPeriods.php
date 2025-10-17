@@ -153,6 +153,6 @@ class ComputeExpectedDimonaPeriods
 
     private function formatHour(CarbonImmutable $date): string
     {
-        return $date->setTimezone(self::TIMEZONE)->format('Hi');
+        return $date->setTimezone(self::TIMEZONE)->format('H:i');
     }
 }

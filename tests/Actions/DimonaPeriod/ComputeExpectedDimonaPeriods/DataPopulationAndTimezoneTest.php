@@ -1,7 +1,6 @@
 <?php
 
 use Carbon\CarbonImmutable;
-use Hyperlab\Dimona\Actions\DimonaPeriod\ComputeExpectedDimonaPeriods;
 use Hyperlab\Dimona\Data\EmploymentLocationData;
 use Hyperlab\Dimona\Enums\EmploymentLocationCountry;
 use Hyperlab\Dimona\Enums\WorkerType;
@@ -30,7 +29,7 @@ it('populates all dimona period data fields correctly for flexi worker', functio
         ->location($location)
         ->create();
 
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, new Collection([$employment]));
+    $result = computeExpectedDimonaPeriods(new Collection([$employment]));
 
     $period = $result[0];
     expect($period->employmentIds)->toBe(['emp-1'])
@@ -39,9 +38,9 @@ it('populates all dimona period data fields correctly for flexi worker', functio
         ->and($period->jointCommissionNumber)->toBe(304)
         ->and($period->workerType)->toBe(WorkerType::Flexi)
         ->and($period->startDate)->toBe('2025-10-01')
-        ->and($period->startHour)->toBe('1430')
+        ->and($period->startHour)->toBe('14:30')
         ->and($period->endDate)->toBe('2025-10-01')
-        ->and($period->endHour)->toBe('1845')
+        ->and($period->endHour)->toBe('18:45')
         ->and($period->numberOfHours)->toBeNull()
         ->and($period->location)->toBe($location);
 });
@@ -66,7 +65,7 @@ it('populates all dimona period data fields correctly for student worker', funct
         ->location($location)
         ->create();
 
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, new Collection([$employment]));
+    $result = computeExpectedDimonaPeriods(new Collection([$employment]));
 
     $period = $result[0];
     expect($period->employmentIds)->toBe(['emp-2'])
@@ -90,14 +89,14 @@ it('converts UTC timezone to Europe/Brussels correctly', function () {
         ->endsAt(CarbonImmutable::parse('2025-10-01 16:00:00', 'UTC'))   // 4 PM UTC
         ->create();
 
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, new Collection([$employment]));
+    $result = computeExpectedDimonaPeriods(new Collection([$employment]));
 
     $period = $result[0];
     // UTC+2 in October (CEST): 12:00 UTC = 14:00 Brussels, 16:00 UTC = 18:00 Brussels
     expect($period->startDate)->toBe('2025-10-01')
-        ->and($period->startHour)->toBe('1400')
+        ->and($period->startHour)->toBe('14:00')
         ->and($period->endDate)->toBe('2025-10-01')
-        ->and($period->endHour)->toBe('1800');
+        ->and($period->endHour)->toBe('18:00');
 });
 
 it('handles employment spanning multiple days', function () {
@@ -108,11 +107,11 @@ it('handles employment spanning multiple days', function () {
         ->endsAt('2025-10-02 06:00')
         ->create();
 
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, new Collection([$employment]));
+    $result = computeExpectedDimonaPeriods(new Collection([$employment]));
 
     $period = $result[0];
     expect($period->startDate)->toBe('2025-10-01')
-        ->and($period->startHour)->toBe('2200')
+        ->and($period->startHour)->toBe('22:00')
         ->and($period->endDate)->toBe('2025-10-02')
-        ->and($period->endHour)->toBe('0600');
+        ->and($period->endHour)->toBe('06:00');
 });

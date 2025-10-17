@@ -1,6 +1,5 @@
 <?php
 
-use Hyperlab\Dimona\Actions\DimonaPeriod\ComputeExpectedDimonaPeriods;
 use Hyperlab\Dimona\Enums\WorkerType;
 use Hyperlab\Dimona\Tests\Factories\EmploymentDataFactory;
 use Illuminate\Support\Collection;
@@ -30,20 +29,24 @@ it('handles mixed worker types on same day', function () {
             ->startsAt('2025-10-01 16:00')
             ->endsAt('2025-10-01 20:00')
             ->create(),
+        $baseFactory
+            ->id('employment-4')
+            ->workerType(WorkerType::Student)
+            ->startsAt('2025-10-01 21:00')
+            ->endsAt('2025-10-02 02:00')
+            ->create(),
     ]);
 
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, $employments);
+    $result = computeExpectedDimonaPeriods($employments);
 
     // Should create 3 periods: Flexi (2 separate) + Student (1)
-    // Flexi workers with same date create separate periods
-    // Order reflects the input order: emp-1 (Flexi), emp-2 (Flexi), emp-3 (Student)
     expect($result)->toHaveCount(3)
         ->and($result[0]->workerType)->toBe(WorkerType::Flexi)
         ->and($result[0]->employmentIds)->toBe(['employment-1'])
         ->and($result[1]->workerType)->toBe(WorkerType::Flexi)
         ->and($result[1]->employmentIds)->toBe(['employment-3'])
         ->and($result[2]->workerType)->toBe(WorkerType::Student)
-        ->and($result[2]->employmentIds)->toBe(['employment-2']);
+        ->and($result[2]->employmentIds)->toBe(['employment-2', 'employment-4']);
 });
 
 it('handles all three worker types together', function () {
@@ -89,7 +92,7 @@ it('handles all three worker types together', function () {
             ->create(),
     ]);
 
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, $employments);
+    $result = computeExpectedDimonaPeriods($employments);
 
     // Flexi: 2 separate periods, Student: 1 merged period, Other: 1 merged period = 4 total
     expect($result)->toHaveCount(4)

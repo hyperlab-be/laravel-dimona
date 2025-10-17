@@ -1,6 +1,5 @@
 <?php
 
-use Hyperlab\Dimona\Actions\DimonaPeriod\ComputeExpectedDimonaPeriods;
 use Hyperlab\Dimona\Enums\WorkerType;
 use Hyperlab\Dimona\Tests\Factories\EmploymentDataFactory;
 use Illuminate\Support\Collection;
@@ -23,7 +22,7 @@ it('separates periods by different worker types', function () {
             ->create(),
     ]);
 
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, $employments);
+    $result = computeExpectedDimonaPeriods($employments);
 
     expect($result)->toHaveCount(2)
         ->and($result[0]->workerType)->toBe(WorkerType::Flexi)
@@ -44,9 +43,11 @@ it('separates periods by different dates', function () {
             ->create(),
     ]);
 
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, $employments);
+    $result = computeExpectedDimonaPeriods($employments);
 
-    expect($result)->toHaveCount(2);
+    expect($result)->toHaveCount(2)
+        ->and($result[0]->startDate)->toBe('2025-10-01')
+        ->and($result[1]->startDate)->toBe('2025-10-02');
 });
 
 it('separates periods by different joint commission numbers', function () {
@@ -68,7 +69,7 @@ it('separates periods by different joint commission numbers', function () {
             ->create(),
     ]);
 
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, $employments);
+    $result = computeExpectedDimonaPeriods($employments);
 
     expect($result)->toHaveCount(2)
         ->and($result[0]->jointCommissionNumber)->toBe(304)

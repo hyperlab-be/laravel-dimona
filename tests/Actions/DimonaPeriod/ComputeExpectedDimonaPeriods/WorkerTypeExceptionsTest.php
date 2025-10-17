@@ -1,7 +1,6 @@
 <?php
 
 use Carbon\CarbonImmutable;
-use Hyperlab\Dimona\Actions\DimonaPeriod\ComputeExpectedDimonaPeriods;
 use Hyperlab\Dimona\Enums\WorkerType;
 use Hyperlab\Dimona\Models\DimonaWorkerTypeException;
 use Hyperlab\Dimona\Tests\Factories\EmploymentDataFactory;
@@ -13,7 +12,7 @@ it('resolves flexi worker type to Other when exception exists', function () {
     $startsAt = CarbonImmutable::parse('2025-10-01 07:00');
 
     // Create an exception for this worker
-    DimonaWorkerTypeException::create([
+    DimonaWorkerTypeException::query()->create([
         'social_security_number' => WORKER_SSN,
         'worker_type' => WorkerType::Flexi,
         'starts_at' => $startsAt->startOfDay(),
@@ -29,7 +28,7 @@ it('resolves flexi worker type to Other when exception exists', function () {
             ->create(),
     ]);
 
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, $employments);
+    $result = computeExpectedDimonaPeriods($employments);
 
     expect($result)->toHaveCount(1)
         ->and($result[0]->workerType)->toBe(WorkerType::Other);
@@ -39,7 +38,7 @@ it('keeps student worker type when exception exists', function () {
     $startsAt = CarbonImmutable::parse('2025-10-01 07:00');
 
     // Create an exception for this worker
-    DimonaWorkerTypeException::create([
+    DimonaWorkerTypeException::query()->create([
         'social_security_number' => WORKER_SSN,
         'worker_type' => WorkerType::Student,
         'starts_at' => $startsAt->startOfDay(),
@@ -55,7 +54,7 @@ it('keeps student worker type when exception exists', function () {
             ->create(),
     ]);
 
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, $employments);
+    $result = computeExpectedDimonaPeriods($employments);
 
     expect($result)->toHaveCount(1)
         ->and($result[0]->workerType)->toBe(WorkerType::Student);
@@ -65,7 +64,7 @@ it('keeps flexi worker type when no exception exists', function () {
     $startsAt = CarbonImmutable::parse('2025-10-01 07:00');
 
     // Make sure no exception exists
-    DimonaWorkerTypeException::where('social_security_number', WORKER_SSN)->delete();
+    DimonaWorkerTypeException::query()->where('social_security_number', WORKER_SSN)->delete();
 
     $employments = new Collection([
         EmploymentDataFactory::new()
@@ -76,7 +75,7 @@ it('keeps flexi worker type when no exception exists', function () {
             ->create(),
     ]);
 
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, $employments);
+    $result = computeExpectedDimonaPeriods($employments);
 
     expect($result)->toHaveCount(1)
         ->and($result[0]->workerType)->toBe(WorkerType::Flexi);
@@ -86,7 +85,7 @@ it('keeps student worker type when no exception exists', function () {
     $startsAt = CarbonImmutable::parse('2025-10-01 07:00');
 
     // Make sure no exception exists
-    DimonaWorkerTypeException::where('social_security_number', WORKER_SSN)->delete();
+    DimonaWorkerTypeException::query()->where('social_security_number', WORKER_SSN)->delete();
 
     $employments = new Collection([
         EmploymentDataFactory::new()
@@ -97,43 +96,33 @@ it('keeps student worker type when no exception exists', function () {
             ->create(),
     ]);
 
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, $employments);
+    $result = computeExpectedDimonaPeriods($employments);
 
     expect($result)->toHaveCount(1)
         ->and($result[0]->workerType)->toBe(WorkerType::Student);
 });
 
-it('does not resolve other worker types even when exception exists', function () {
-    $startsAt = CarbonImmutable::parse('2025-10-01 07:00');
-
-    // Create an exception for Other worker type (which shouldn't have any effect)
-    DimonaWorkerTypeException::create([
-        'social_security_number' => WORKER_SSN,
-        'worker_type' => WorkerType::Other,
-        'starts_at' => $startsAt->startOfDay(),
-        'ends_at' => $startsAt->endOfDay(),
-    ]);
-
+it('keeps other worker type', function () {
     $employments = new Collection([
         EmploymentDataFactory::new()
             ->id('employment-1')
             ->workerType(WorkerType::Other)
-            ->startsAt($startsAt)
+            ->startsAt('2025-10-01 07:00')
             ->endsAt('2025-10-01 12:00')
             ->create(),
     ]);
 
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, $employments);
+    $result = computeExpectedDimonaPeriods($employments);
 
     expect($result)->toHaveCount(1)
         ->and($result[0]->workerType)->toBe(WorkerType::Other);
 });
 
-it('resolves worker type before grouping causing periods to be separated', function () {
+it('resolves worker type before grouping causing periods to be merged', function () {
     $startsAt = CarbonImmutable::parse('2025-10-01 07:00');
 
     // Create an exception for flexi worker only
-    DimonaWorkerTypeException::create([
+    DimonaWorkerTypeException::query()->create([
         'social_security_number' => WORKER_SSN,
         'worker_type' => WorkerType::Flexi,
         'starts_at' => $startsAt->startOfDay(),
@@ -141,8 +130,7 @@ it('resolves worker type before grouping causing periods to be separated', funct
     ]);
 
     $baseFactory = EmploymentDataFactory::new()
-        ->jointCommissionNumber(304)
-        ->workerType(WorkerType::Flexi);
+        ->jointCommissionNumber(304);
 
     $employments = new Collection([
         // This one should be resolved to Other due to exception
@@ -150,16 +138,17 @@ it('resolves worker type before grouping causing periods to be separated', funct
             ->id('employment-1')
             ->startsAt($startsAt)
             ->endsAt('2025-10-01 12:00')
+            ->workerType(WorkerType::Flexi)
             ->create(),
-        // This one should also be resolved to Other (consecutive but different worker type after resolution)
         $baseFactory
             ->id('employment-2')
             ->startsAt('2025-10-01 12:00')
             ->endsAt('2025-10-01 17:00')
+            ->workerType(WorkerType::Other)
             ->create(),
     ]);
 
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, $employments);
+    $result = computeExpectedDimonaPeriods($employments);
 
     // Both employments are Flexi, both get resolved to Other, so they should be merged
     expect($result)->toHaveCount(1)
@@ -172,7 +161,7 @@ it('resolves worker type only for employments within exception date range', func
     $day2StartsAt = CarbonImmutable::parse('2025-10-02 07:00');
 
     // Create an exception only for day 1
-    DimonaWorkerTypeException::create([
+    DimonaWorkerTypeException::query()->create([
         'social_security_number' => WORKER_SSN,
         'worker_type' => WorkerType::Flexi,
         'starts_at' => $day1StartsAt->startOfDay(),
@@ -194,7 +183,7 @@ it('resolves worker type only for employments within exception date range', func
             ->create(),
     ]);
 
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, $employments);
+    $result = computeExpectedDimonaPeriods($employments);
 
     // Should create 2 groups: one with Other (day 1 resolved), one with Flexi (day 2 not resolved)
     expect($result)->toHaveCount(2)

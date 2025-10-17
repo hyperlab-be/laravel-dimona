@@ -1,6 +1,5 @@
 <?php
 
-use Hyperlab\Dimona\Actions\DimonaPeriod\ComputeExpectedDimonaPeriods;
 use Hyperlab\Dimona\Data\EmploymentLocationData;
 use Hyperlab\Dimona\Enums\EmploymentLocationCountry;
 use Hyperlab\Dimona\Enums\WorkerType;
@@ -9,7 +8,7 @@ use Illuminate\Support\Collection;
 
 require_once __DIR__.'/Helpers.php';
 
-it('merges consecutive student employments and accumulates hours', function () {
+it('merges student employments on same day and accumulates hours', function () {
     $baseFactory = EmploymentDataFactory::new()
         ->jointCommissionNumber(304)
         ->workerType(WorkerType::Student);
@@ -22,8 +21,8 @@ it('merges consecutive student employments and accumulates hours', function () {
             ->create(),
         $baseFactory
             ->id('employment-2')
-            ->startsAt('2025-10-01 12:00')
-            ->endsAt('2025-10-01 17:00') // 5 hours
+            ->startsAt('2025-10-01 13:00')
+            ->endsAt('2025-10-01 17:00') // 4 hours
             ->create(),
         $baseFactory
             ->id('employment-3')
@@ -32,18 +31,18 @@ it('merges consecutive student employments and accumulates hours', function () {
             ->create(),
     ]);
 
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, $employments);
+    $result = computeExpectedDimonaPeriods($employments);
 
     expect($result)->toHaveCount(1)
         ->and($result[0]->employmentIds)->toBe(['employment-1', 'employment-2', 'employment-3'])
-        ->and($result[0]->numberOfHours)->toBe(12.0) // 4 + 5 + 3
+        ->and($result[0]->numberOfHours)->toBe(11.0) // 4 + 4 + 3
         ->and($result[0]->startDate)->toBe('2025-10-01')
         ->and($result[0]->endDate)->toBe('2025-10-01')
         ->and($result[0]->startHour)->toBeNull()
         ->and($result[0]->endHour)->toBeNull();
 });
 
-it('creates separate periods for non-consecutive student employments', function () {
+it('creates separate periods for student employments on different days', function () {
     $baseFactory = EmploymentDataFactory::new()
         ->jointCommissionNumber(304)
         ->workerType(WorkerType::Student);
@@ -61,40 +60,13 @@ it('creates separate periods for non-consecutive student employments', function 
             ->create(),
     ]);
 
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, $employments);
+    $result = computeExpectedDimonaPeriods($employments);
 
     expect($result)->toHaveCount(2)
         ->and($result[0]->employmentIds)->toBe(['employment-1'])
         ->and($result[0]->numberOfHours)->toBe(4.0)
         ->and($result[1]->employmentIds)->toBe(['employment-2'])
         ->and($result[1]->numberOfHours)->toBe(4.0);
-});
-
-it('merges student workers with gaps on same day', function () {
-    $baseFactory = EmploymentDataFactory::new()
-        ->jointCommissionNumber(304)
-        ->workerType(WorkerType::Student);
-
-    $employments = new Collection([
-        $baseFactory
-            ->id('employment-1')
-            ->startsAt('2025-10-01 08:00')
-            ->endsAt('2025-10-01 12:00')
-            ->create(),
-        $baseFactory
-            ->id('employment-2')
-            ->startsAt('2025-10-01 14:00') // 2-hour gap
-            ->endsAt('2025-10-01 18:00')
-            ->create(),
-    ]);
-
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, $employments);
-
-    // Student workers in same group are merged even when there's a gap (non-consecutive times)
-    // Both are in same group (same day, worker type, commission), so they get merged
-    expect($result)->toHaveCount(1)
-        ->and($result[0]->employmentIds)->toBe(['employment-1', 'employment-2'])
-        ->and($result[0]->numberOfHours)->toBe(8.0); // Both hours get accumulated
 });
 
 it('uses first employment location when merging student workers', function () {
@@ -137,7 +109,7 @@ it('uses first employment location when merging student workers', function () {
             ->create(),
     ]);
 
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, $employments);
+    $result = computeExpectedDimonaPeriods($employments);
 
     // Should use the first employment's location
     expect($result)->toHaveCount(1)
@@ -163,7 +135,7 @@ it('handles student workers with partial hours', function () {
             ->create(),
     ]);
 
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, $employments);
+    $result = computeExpectedDimonaPeriods($employments);
 
     expect($result)->toHaveCount(1)
         ->and($result[0]->employmentIds)->toBe(['employment-1', 'employment-2'])
@@ -179,7 +151,7 @@ it('handles student employment spanning multiple days (across midnight)', functi
         ->endsAt('2025-10-02 02:00') // 4 hours spanning midnight
         ->create();
 
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, new Collection([$employment]));
+    $result = computeExpectedDimonaPeriods(new Collection([$employment]));
 
     expect($result)->toHaveCount(1)
         ->and($result[0]->employmentIds)->toBe(['employment-1'])
@@ -188,36 +160,4 @@ it('handles student employment spanning multiple days (across midnight)', functi
         ->and($result[0]->numberOfHours)->toBe(4.0)
         ->and($result[0]->startHour)->toBeNull()
         ->and($result[0]->endHour)->toBeNull();
-});
-
-it('merges student employments and updates end date correctly', function () {
-    $baseFactory = EmploymentDataFactory::new()
-        ->jointCommissionNumber(304)
-        ->workerType(WorkerType::Student);
-
-    $employments = new Collection([
-        $baseFactory
-            ->id('employment-1')
-            ->startsAt('2025-10-01 08:00')
-            ->endsAt('2025-10-01 12:00')
-            ->create(),
-        $baseFactory
-            ->id('employment-2')
-            ->startsAt('2025-10-01 13:00')
-            ->endsAt('2025-10-01 17:00')
-            ->create(),
-        $baseFactory
-            ->id('employment-3')
-            ->startsAt('2025-10-01 18:00')
-            ->endsAt('2025-10-01 22:30')
-            ->create(),
-    ]);
-
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, $employments);
-
-    expect($result)->toHaveCount(1)
-        ->and($result[0]->employmentIds)->toBe(['employment-1', 'employment-2', 'employment-3'])
-        ->and($result[0]->startDate)->toBe('2025-10-01')
-        ->and($result[0]->endDate)->toBe('2025-10-01')
-        ->and($result[0]->numberOfHours)->toBe(12.5); // 4 + 4 + 4.5
 });

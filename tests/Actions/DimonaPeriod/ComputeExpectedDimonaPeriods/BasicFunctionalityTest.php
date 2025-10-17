@@ -1,6 +1,5 @@
 <?php
 
-use Hyperlab\Dimona\Actions\DimonaPeriod\ComputeExpectedDimonaPeriods;
 use Hyperlab\Dimona\Enums\WorkerType;
 use Hyperlab\Dimona\Tests\Factories\EmploymentDataFactory;
 use Illuminate\Support\Collection;
@@ -10,7 +9,7 @@ require_once __DIR__.'/Helpers.php';
 it('handles empty collection', function () {
     $employments = new Collection([]);
 
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, $employments);
+    $result = computeExpectedDimonaPeriods($employments);
 
     expect($result)->toBeEmpty();
 });
@@ -22,7 +21,7 @@ it('handles single employment', function () {
         ->endsAt('2025-10-01 12:00')
         ->create();
 
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, new Collection([$employment]));
+    $result = computeExpectedDimonaPeriods(new Collection([$employment]));
 
     expect($result)->toHaveCount(1)
         ->and($result[0]->employmentIds)->toBe(['employment-1'])
@@ -48,7 +47,7 @@ it('handles unordered employments', function () {
             ->create(),
     ]);
 
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, $employments);
+    $result = computeExpectedDimonaPeriods($employments);
 
     expect($result)->toHaveCount(2)
         ->and($result[0]->employmentIds)->toBe(['employment-1'])
@@ -81,7 +80,7 @@ it('returns groups in consistent order', function () {
             ->create(),
     ]);
 
-    $result = ComputeExpectedDimonaPeriods::new()->execute(EMPLOYER_ENTERPRISE_NUMBER, WORKER_SSN, $employments);
+    $result = computeExpectedDimonaPeriods($employments);
 
     // Groups maintain the order of first occurrence in input after grouping
     // emp-3 appears first in input, then emp-1, then emp-2
