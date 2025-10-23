@@ -1,6 +1,5 @@
 <?php
 
-use Carbon\CarbonImmutable;
 use Hyperlab\Dimona\Actions\DimonaPeriod\ComputeExpectedDimonaPeriods;
 use Hyperlab\Dimona\Enums\WorkerType;
 use Hyperlab\Dimona\Tests\Factories\EmploymentDataFactory;

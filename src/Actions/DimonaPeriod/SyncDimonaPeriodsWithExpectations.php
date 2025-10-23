@@ -3,7 +3,6 @@
 namespace Hyperlab\Dimona\Actions\DimonaPeriod;
 
 use Carbon\CarbonPeriodImmutable;
-use Exception;
 use Hyperlab\Dimona\Data\DimonaPeriodData;
 use Hyperlab\Dimona\Enums\DimonaPeriodState;
 use Hyperlab\Dimona\Models\DimonaPeriod;
@@ -97,6 +96,7 @@ class SyncDimonaPeriodsWithExpectations
         $linkedLooselyMatchingPeriod = $this->findLinkedPeriodWithLooseMatch($data);
         if ($linkedLooselyMatchingPeriod) {
             $this->updatePeriodFields($linkedLooselyMatchingPeriod, $data);
+
             return;
         }
 
@@ -104,6 +104,7 @@ class SyncDimonaPeriodsWithExpectations
         $unlinkedLooselyMatchingPeriod = $this->findUnlinkedPeriodWithLooseMatch($data);
         if ($unlinkedLooselyMatchingPeriod) {
             $this->updatePeriodFields($unlinkedLooselyMatchingPeriod, $data);
+
             return;
         }
 

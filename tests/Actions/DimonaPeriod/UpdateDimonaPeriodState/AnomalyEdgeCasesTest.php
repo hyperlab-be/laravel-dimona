@@ -4,7 +4,6 @@ use Hyperlab\Dimona\Enums\DimonaDeclarationState;
 use Hyperlab\Dimona\Enums\DimonaDeclarationType;
 use Hyperlab\Dimona\Enums\DimonaPeriodState;
 use Hyperlab\Dimona\Models\DimonaDeclaration;
-use Hyperlab\Dimona\Models\DimonaPeriod;
 
 beforeEach(function () {
     require_once __DIR__.'/Helpers.php';
