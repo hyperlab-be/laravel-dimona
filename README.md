@@ -113,40 +113,41 @@ For multiple clients, you can configure them in the `config/dimona.php` file:
 
 ### Basic Usage
 
-Implement the `DimonaDeclarable` interface and use the `HasDimonaPeriods` trait in your model:
+Call the `declare` method on the `Dimona` facade with a period and collection of `EmploymentData` objects.
 
 ```php
-use Hyperlab\Dimona\DimonaDeclarable;
-use Hyperlab\Dimona\HasDimonaPeriods;
-use Hyperlab\Dimona\Data\DimonaData;
-use Hyperlab\Dimona\Data\DimonaLocationData;
+use Carbon\CarbonImmutable;
+use Carbon\CarbonPeriodImmutable;
+use Hyperlab\Dimona\Data\EmploymentData;
+use Illuminate\Support\Collection;
 
-class Employment extends Model implements DimonaDeclarable
-{
-    use HasDimonaPeriods;
+$period = CarbonPeriodImmutable::dates(
+    CarbonImmutable::startOfWeek(),
+    CarbonImmutable::endOfWeek(),
+);
 
-    public function shouldDeclareDimona(): bool
-    {
-        // implement logic to determine if Dimona should be declared
-    }
+$employments = new Collection([
+    new EmploymentData(...),
+    new EmploymentData(...),
+    new EmploymentData(...),
+]);
 
-    public function getDimonaData(): DimonaData
-    {
-        return new DimonaData(
-            // implement logic to return the Dimona data
-        );
-    }
-}
-```
-
-Then, pass a model instance to the `Dimona` facade to declare a Dimona:
-
-```php
 // Declare a Dimona
-Dimona::declare($employment);
+Dimona::declare($period, $employments);
 
 // Use a specific client
-Dimona::client('default')->declare($employment);
+Dimona::client('default')->declare($period, $employments);
+```
+
+Use the `HasDimonaPeriods` trait in your employment model:
+
+```php
+use Hyperlab\Dimona\HasDimonaPeriods;
+
+class Employment extends Model
+{
+    use HasDimonaPeriods;
+}
 ```
 
 ## Events

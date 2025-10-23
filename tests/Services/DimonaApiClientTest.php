@@ -83,7 +83,7 @@ it('can be instantiated using the static new method', function () {
 
     expect($client)->toBeInstanceOf(DimonaApiClient::class)
         ->and($client->clientId)->toBe('test-client-id')
-        ->and($client->privateKeyPath)->toBe('test-private-key-path');
+        ->and($client->privateKeyPath)->toEndWith('/laravel-dimona/tests/test-private-key.pem');
 });
 
 it('can be instantiated with a specific client ID using the static new method', function () {

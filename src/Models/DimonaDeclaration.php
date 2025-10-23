@@ -4,15 +4,17 @@ namespace Hyperlab\Dimona\Models;
 
 use Hyperlab\Dimona\Actions\DimonaDeclaration\UpdateDimonaDeclarationReference;
 use Hyperlab\Dimona\Actions\DimonaDeclaration\UpdateDimonaDeclarationState;
+use Hyperlab\Dimona\Database\Factories\DimonaDeclarationFactory;
 use Hyperlab\Dimona\Enums\DimonaDeclarationState;
 use Hyperlab\Dimona\Enums\DimonaDeclarationType;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class DimonaDeclaration extends Model
 {
-    use HasUlids;
+    use HasFactory, HasUlids;
 
     protected $guarded = [];
 
@@ -48,5 +50,10 @@ class DimonaDeclaration extends Model
             state: $state,
             anomalies: $anomalies,
         );
+    }
+
+    protected static function newFactory(): DimonaDeclarationFactory
+    {
+        return DimonaDeclarationFactory::new();
     }
 }

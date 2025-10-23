@@ -10,8 +10,22 @@ return new class extends Migration
     {
         Schema::create('dimona_periods', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->ulidMorphs('model');
-            $table->string('worker_type')->nullable();
+            $table->string('employer_enterprise_number');
+            $table->string('worker_social_security_number');
+            $table->string('joint_commission_number');
+            $table->string('worker_type');
+            $table->string('start_date');
+            $table->string('start_hour')->nullable();
+            $table->string('end_date');
+            $table->string('end_hour')->nullable();
+            $table->float('number_of_hours')->nullable();
+            $table->string('location_name')->nullable();
+            $table->string('location_street')->nullable();
+            $table->string('location_house_number')->nullable();
+            $table->string('location_box_number')->nullable();
+            $table->string('location_postal_code')->nullable();
+            $table->string('location_place')->nullable();
+            $table->string('location_country')->nullable();
             $table->string('state');
             $table->string('reference')->nullable();
             $table->timestamps();
@@ -26,6 +40,13 @@ return new class extends Migration
             $table->text('payload');
             $table->text('anomalies')->nullable();
             $table->timestamps();
+        });
+
+        Schema::create('dimona_period_employment', function (Blueprint $table) {
+            $table->foreignUlid('dimona_period_id')->constrained()->cascadeOnDelete();
+            $table->string('employment_id');
+
+            $table->unique(['dimona_period_id', 'employment_id']);
         });
 
         Schema::create('dimona_worker_type_exceptions', function (Blueprint $table) {

@@ -45,14 +45,24 @@ class UpdateDimonaPeriodState
             return null;
         }
 
-        if ($dimonaDeclarations->last()?->state === DimonaDeclarationState::Pending) {
+        $lastDeclarationState = $dimonaDeclarations->last()?->state;
+
+        if ($lastDeclarationState === DimonaDeclarationState::Pending) {
             return DimonaPeriodState::Pending;
+        }
+
+        if ($lastDeclarationState === DimonaDeclarationState::Waiting) {
+            return DimonaPeriodState::Waiting;
         }
 
         return $dimonaDeclarations->reduce(
             function (?DimonaPeriodState $currentState, DimonaDeclaration $declaration) {
                 if ($declaration->type === DimonaDeclarationType::In) {
                     return $this->determineStateForInDeclaration($declaration);
+                }
+
+                if ($declaration->type === DimonaDeclarationType::Update) {
+                    return $this->determineStateForUpdateDeclaration($declaration);
                 }
 
                 if ($declaration->type === DimonaDeclarationType::Cancel) {
@@ -71,15 +81,34 @@ class UpdateDimonaPeriodState
             DimonaDeclarationState::AcceptedWithWarning => $this->handleAcceptedWithWarning($declaration),
             DimonaDeclarationState::Refused => DimonaPeriodState::Refused,
             DimonaDeclarationState::Waiting => DimonaPeriodState::Waiting,
+            DimonaDeclarationState::Failed => DimonaPeriodState::Failed,
+            default => null,
+        };
+    }
+
+    private function determineStateForUpdateDeclaration(DimonaDeclaration $declaration): ?DimonaPeriodState
+    {
+        return match ($declaration->state) {
+            DimonaDeclarationState::Accepted => DimonaPeriodState::Accepted,
+            DimonaDeclarationState::AcceptedWithWarning => $this->handleAcceptedWithWarning($declaration),
+            DimonaDeclarationState::Refused => DimonaPeriodState::Refused,
+            DimonaDeclarationState::Waiting => DimonaPeriodState::Waiting,
+            DimonaDeclarationState::Failed => DimonaPeriodState::Failed,
             default => null,
         };
     }
 
     private function handleAcceptedWithWarning(DimonaDeclaration $declaration): DimonaPeriodState
     {
-        return $declaration->anomalies()->flexiRequirementsAreNotMet()
-            ? DimonaPeriodState::AcceptedWithWarning
-            : DimonaPeriodState::Accepted;
+        if ($declaration->anomalies()->flexiRequirementsAreNotMet()) {
+            return DimonaPeriodState::AcceptedWithWarning;
+        }
+
+        if ($declaration->anomalies()->studentRequirementsAreNotMet()) {
+            return DimonaPeriodState::AcceptedWithWarning;
+        }
+
+        return DimonaPeriodState::Accepted;
     }
 
     private function determineStateForCancelDeclaration(

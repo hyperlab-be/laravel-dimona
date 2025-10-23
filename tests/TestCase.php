@@ -42,9 +42,12 @@ class TestCase extends Orchestra
         // Configure the client
         config()->set('dimona.clients.test-client', [
             'client_id' => 'test-client-id',
-            'private_key_path' => 'test-private-key-path',
+            'private_key_path' => __DIR__.'/test-private-key.pem',
         ]);
 
         config()->set('dimona.default_client', 'test-client');
+
+        // Configure the employment model for tests
+        config()->set('dimona.employment_model', \Hyperlab\Dimona\Tests\Models\Employment::class);
     }
 }
