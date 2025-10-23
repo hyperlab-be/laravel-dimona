@@ -125,7 +125,7 @@ it('sets the state to accepted with warning when an in declaration has multiple 
     expect($result->state)->toBe(DimonaPeriodState::AcceptedWithWarning);
 });
 
-it('sets the state to accepted when an in declaration has student requirements not met anomaly', function () {
+it('sets the state to accepted with warning when an in declaration has student requirements not met anomaly', function () {
     DimonaDeclaration::query()->create([
         'dimona_period_id' => $this->dimonaPeriod->id,
         'type' => DimonaDeclarationType::In,
@@ -136,5 +136,5 @@ it('sets the state to accepted when an in declaration has student requirements n
 
     $result = UpdateDimonaPeriodState::new()->execute($this->dimonaPeriod);
 
-    expect($result->state)->toBe(DimonaPeriodState::Accepted);
+    expect($result->state)->toBe(DimonaPeriodState::AcceptedWithWarning);
 });

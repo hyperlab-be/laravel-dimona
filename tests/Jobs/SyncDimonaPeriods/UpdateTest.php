@@ -204,6 +204,7 @@ it('updates existing dimona period when employment switches and details change',
     $employments = collect([
         EmploymentDataFactory::new()
             ->id('emp-1')
+            ->workerType(WorkerType::Flexi)
             ->create(),
     ]);
 

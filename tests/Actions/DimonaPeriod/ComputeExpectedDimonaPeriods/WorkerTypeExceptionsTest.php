@@ -34,7 +34,7 @@ it('resolves flexi worker type to Other when exception exists', function () {
         ->and($result[0]->workerType)->toBe(WorkerType::Other);
 });
 
-it('keeps student worker type when exception exists', function () {
+it('resolves student worker type to Other when exception exists', function () {
     $startsAt = CarbonImmutable::parse('2025-10-01 07:00');
 
     // Create an exception for this worker
@@ -57,7 +57,7 @@ it('keeps student worker type when exception exists', function () {
     $result = computeExpectedDimonaPeriods($employments);
 
     expect($result)->toHaveCount(1)
-        ->and($result[0]->workerType)->toBe(WorkerType::Student);
+        ->and($result[0]->workerType)->toBe(WorkerType::Other);
 });
 
 it('keeps flexi worker type when no exception exists', function () {

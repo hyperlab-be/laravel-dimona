@@ -32,6 +32,17 @@ class WorkerTypeExceptionService
             return $exceptionExists ? WorkerType::Other : $workerType;
         }
 
+        if ($workerType === WorkerType::Student) {
+            $exceptionExists = DimonaWorkerTypeException::query()
+                ->where('social_security_number', $workerSocialSecurityNumber)
+                ->where('starts_at', '<=', $employmentStartsAt)
+                ->where('ends_at', '>=', $employmentStartsAt)
+                ->where('worker_type', $workerType)
+                ->exists();
+
+            return $exceptionExists ? WorkerType::Other : $workerType;
+        }
+
         return $workerType;
     }
 

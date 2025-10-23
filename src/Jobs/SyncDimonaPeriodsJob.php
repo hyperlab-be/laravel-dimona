@@ -87,56 +87,8 @@ class SyncDimonaPeriodsJob implements ShouldBeUnique, ShouldQueue
         if ($this->createDimonaPeriods()) {
             $this->redispatchJob();
         }
-    }
 
-    /**
-     * Create dimona periods (with state new)
-     */
-    private function createDimonaPeriods(): bool
-    {
-        return DimonaPeriod::query()
-            ->where('employer_enterprise_number', $this->employerEnterpriseNumber)
-            ->where('worker_social_security_number', $this->workerSocialSecurityNumber)
-            ->whereBetween('start_date', [$this->period->start->format('Y-m-d'), $this->period->end->format('Y-m-d')])
-            ->where('state', DimonaPeriodState::New)
-            ->get()
-            ->each(fn (DimonaPeriod $dimonaPeriod) => $this->dimonaService->createDimonaPeriod($dimonaPeriod))
-            ->isNotEmpty();
-    }
-
-    private function updateDimonaPeriods(): bool
-    {
-        return DimonaPeriod::query()
-            ->where('employer_enterprise_number', $this->employerEnterpriseNumber)
-            ->where('worker_social_security_number', $this->workerSocialSecurityNumber)
-            ->whereBetween('start_date', [$this->period->start->format('Y-m-d'), $this->period->end->format('Y-m-d')])
-            ->where('state', DimonaPeriodState::Outdated)
-            ->get()
-            ->each(fn (DimonaPeriod $dimonaPeriod) => $this->dimonaService->updateDimonaPeriod($dimonaPeriod))
-            ->isNotEmpty();
-    }
-
-    /**
-     * Cancel dimona periods (without employment ids | with state accepted with warning)
-     */
-    private function cancelDimonaPeriods(): bool
-    {
-        return DimonaPeriod::query()
-            ->where('employer_enterprise_number', $this->employerEnterpriseNumber)
-            ->where('worker_social_security_number', $this->workerSocialSecurityNumber)
-            ->whereBetween('start_date', [$this->period->start->format('Y-m-d'), $this->period->end->format('Y-m-d')])
-            ->where(function ($query) {
-                $query
-                    ->where(function ($query) {
-                        $query
-                            ->whereIn('state', [DimonaPeriodState::Accepted, DimonaPeriodState::Waiting])
-                            ->whereDoesntHave('dimona_period_employments');
-                    })
-                    ->orWhere('state', DimonaPeriodState::AcceptedWithWarning);
-            })
-            ->get()
-            ->each(fn (DimonaPeriod $dimonaPeriod) => $this->dimonaService->cancelDimonaPeriod($dimonaPeriod))
-            ->isNotEmpty();
+        // what do we do with dimona periods with state failed?
     }
 
     private function syncDimonaPeriods(): bool
@@ -168,6 +120,59 @@ class SyncDimonaPeriodsJob implements ShouldBeUnique, ShouldQueue
                 },
                 false
             );
+    }
+
+    /**
+     * Cancel dimona periods (without employment ids | with state accepted with warning)
+     */
+    private function cancelDimonaPeriods(): bool
+    {
+        return DimonaPeriod::query()
+            ->where('employer_enterprise_number', $this->employerEnterpriseNumber)
+            ->where('worker_social_security_number', $this->workerSocialSecurityNumber)
+            ->whereBetween('start_date', [$this->period->start->format('Y-m-d'), $this->period->end->format('Y-m-d')])
+            ->where(function ($query) {
+                $query
+                    ->where(function ($query) {
+                        $query
+                            ->whereIn('state', [DimonaPeriodState::Accepted, DimonaPeriodState::Waiting])
+                            ->whereDoesntHave('dimona_period_employments');
+                    })
+                    ->orWhere('state', DimonaPeriodState::AcceptedWithWarning);
+            })
+            ->get()
+            ->each(fn (DimonaPeriod $dimonaPeriod) => $this->dimonaService->cancelDimonaPeriod($dimonaPeriod))
+            ->isNotEmpty();
+    }
+
+    /**
+     * Create dimona periods (with state outdated)
+     */
+    private function updateDimonaPeriods(): bool
+    {
+        return DimonaPeriod::query()
+            ->where('employer_enterprise_number', $this->employerEnterpriseNumber)
+            ->where('worker_social_security_number', $this->workerSocialSecurityNumber)
+            ->whereBetween('start_date', [$this->period->start->format('Y-m-d'), $this->period->end->format('Y-m-d')])
+            ->where('state', DimonaPeriodState::Outdated)
+            ->get()
+            ->each(fn (DimonaPeriod $dimonaPeriod) => $this->dimonaService->updateDimonaPeriod($dimonaPeriod))
+            ->isNotEmpty();
+    }
+
+    /**
+     * Create dimona periods (with state new)
+     */
+    private function createDimonaPeriods(): bool
+    {
+        return DimonaPeriod::query()
+            ->where('employer_enterprise_number', $this->employerEnterpriseNumber)
+            ->where('worker_social_security_number', $this->workerSocialSecurityNumber)
+            ->whereBetween('start_date', [$this->period->start->format('Y-m-d'), $this->period->end->format('Y-m-d')])
+            ->where('state', DimonaPeriodState::New)
+            ->get()
+            ->each(fn (DimonaPeriod $dimonaPeriod) => $this->dimonaService->createDimonaPeriod($dimonaPeriod))
+            ->isNotEmpty();
     }
 
     private function redispatchJob(): void

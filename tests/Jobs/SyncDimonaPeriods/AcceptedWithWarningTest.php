@@ -183,7 +183,10 @@ it('handles accepted with warning state with student anomaly', function () {
             'access_token' => 'fake-token',
             'expires_in' => 3600,
         ]),
-        '*/declarations' => Http::response([], 201, ['Location' => 'declarations/declaration-ref-1']),
+        '*/declarations' => Http::sequence()
+            ->push([], 201, ['Location' => 'declarations/declaration-ref-1'])
+            ->push([], 201, ['Location' => 'declarations/declaration-ref-2'])
+            ->push([], 201, ['Location' => 'declarations/declaration-ref-3']),
         '*/declarations/declaration-ref-1' => Http::response([
             'declarationStatus' => [
                 'period' => ['id' => 'period-ref-1'],
@@ -193,6 +196,24 @@ it('handles accepted with warning state with student anomaly', function () {
                 ],
             ],
         ]),
+        '*/declarations/declaration-ref-2' => Http::sequence()
+            ->push([], 404)  // Loop 3: cancel pending
+            ->push([         // Loop 4: cancel accepted
+                'declarationStatus' => [
+                    'period' => ['id' => 'period-ref-1'],
+                    'result' => 'A',
+                    'anomalies' => [],
+                ],
+            ]),
+        '*/declarations/declaration-ref-3' => Http::sequence()
+            ->push([], 404)  // Loop 6: new create pending
+            ->push([         // Loop 7: new create accepted
+                'declarationStatus' => [
+                    'period' => ['id' => 'period-ref-2'],
+                    'result' => 'A',
+                    'anomalies' => [],
+                ],
+            ]),
     ]);
 
     $employments = collect([
@@ -212,32 +233,348 @@ it('handles accepted with warning state with student anomaly', function () {
 
     $job->handle();
 
-    $dimonaPeriod = DimonaPeriod::query()->first();
-    $declaration = $dimonaPeriod->dimona_declarations()->firstWhere('reference', 'declaration-ref-1');
+    $dimonaPeriod1 = DimonaPeriod::query()->latest('id')->first();
+    $declaration1 = $dimonaPeriod1->dimona_declarations()->firstWhere('reference', 'declaration-ref-1');
 
-    expect($dimonaPeriod->state)->toBe(DimonaPeriodState::Pending)
-        ->and($dimonaPeriod->worker_type)->toBe(WorkerType::Student)
-        ->and($dimonaPeriod->dimona_declarations()->count())->toBe(1)
-        ->and($declaration->type)->toBe(DimonaDeclarationType::In)
-        ->and($declaration->state)->toBe(DimonaDeclarationState::Pending);
+    expect($dimonaPeriod1->state)->toBe(DimonaPeriodState::Pending)
+        ->and($dimonaPeriod1->worker_type)->toBe(WorkerType::Student)
+        ->and($dimonaPeriod1->dimona_declarations()->count())->toBe(1)
+        ->and($declaration1->type)->toBe(DimonaDeclarationType::In)
+        ->and($declaration1->state)->toBe(DimonaDeclarationState::Pending);
 
     Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 
-    // Loop 2: Sync - accepted with warning (student anomaly) -> should just accept the period
+    // Loop 2: Sync - accepted with warning (student contingent exceeded) -> triggers auto-cancel
 
     (new UniqueLock(app(Cache::class)))->release($job);
 
     $job->handle();
 
-    $dimonaPeriod->refresh();
-    $declaration->refresh();
+    $dimonaPeriod1->refresh();
+    $declaration1->refresh();
+    $declaration2 = $dimonaPeriod1->dimona_declarations()->firstWhere('reference', 'declaration-ref-2');
 
-    expect($declaration->state)->toBe(DimonaDeclarationState::AcceptedWithWarning)
-        ->and($declaration->anomalies)->toHaveCount(1)
-        ->and($dimonaPeriod->state)->toBe(DimonaPeriodState::Accepted)
-        ->and($dimonaPeriod->dimona_declarations()->count())->toBe(1);
+    expect($dimonaPeriod1->state)->toBe(DimonaPeriodState::Pending)
+        ->and($dimonaPeriod1->dimona_declarations()->count())->toBe(2)
+        ->and($declaration1->state)->toBe(DimonaDeclarationState::AcceptedWithWarning)
+        ->and($declaration1->anomalies)->toHaveCount(1)
+        ->and($declaration2->type)->toBe(DimonaDeclarationType::Cancel)
+        ->and($declaration2->state)->toBe(DimonaDeclarationState::Pending);
+
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
+
+    // Loop 3: Sync cancel - still pending
+
+    (new UniqueLock(app(Cache::class)))->release($job);
+
+    $job->handle();
+
+    $dimonaPeriod1->refresh();
+    $declaration2->refresh();
+
+    expect($dimonaPeriod1->state)->toBe(DimonaPeriodState::Pending)
+        ->and($dimonaPeriod1->dimona_declarations()->count())->toBe(2)
+        ->and($declaration2->state)->toBe(DimonaDeclarationState::Pending);
+
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 3);
+
+    // Loop 4: Cancel accepted + Create new period with corrected worker type
+
+    (new UniqueLock(app(Cache::class)))->release($job);
+
+    $job->handle(4);
+
+    $dimonaPeriod1->refresh();
+    $declaration2->refresh();
+    $dimonaPeriod2 = DimonaPeriod::query()->latest('id')->first();
+    $declaration3 = $dimonaPeriod2->dimona_declarations()->firstWhere('reference', 'declaration-ref-3');
+
+    expect($dimonaPeriod1->state)->toBe(DimonaPeriodState::Cancelled)
+        ->and($dimonaPeriod1->dimona_declarations()->count())->toBe(2)
+        ->and($declaration2->state)->toBe(DimonaDeclarationState::Accepted)
+        ->and(DimonaPeriod::query()->count())->toBe(2)
+        ->and($dimonaPeriod2->state)->toBe(DimonaPeriodState::Pending)
+        ->and($dimonaPeriod2->worker_type)->toBe(WorkerType::Other)
+        ->and($dimonaPeriod2->dimona_declarations()->count())->toBe(1)
+        ->and($declaration3->type)->toBe(DimonaDeclarationType::In)
+        ->and($declaration3->state)->toBe(DimonaDeclarationState::Pending);
+
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 4);
+
+    // Loop 6: Sync new declaration - still pending
+
+    (new UniqueLock(app(Cache::class)))->release($job);
+
+    $job->handle();
+
+    $dimonaPeriod2->refresh();
+    $declaration3->refresh();
+
+    expect($dimonaPeriod2->state)->toBe(DimonaPeriodState::Pending)
+        ->and($dimonaPeriod2->dimona_declarations()->count())->toBe(1)
+        ->and($declaration3->state)->toBe(DimonaDeclarationState::Pending);
+
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 5);
+
+    // Loop 7: New declaration accepted
+
+    (new UniqueLock(app(Cache::class)))->release($job);
+
+    $job->handle();
+
+    $dimonaPeriod2->refresh();
+    $declaration3->refresh();
+
+    expect($dimonaPeriod2->state)->toBe(DimonaPeriodState::Accepted)
+        ->and($dimonaPeriod2->dimona_declarations()->count())->toBe(1)
+        ->and($declaration3->state)->toBe(DimonaDeclarationState::Accepted);
+
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 5);
+});
+
+it('handles accepted with warning state with student anomaly on update declaration', function () {
+    Http::fake([
+        config('dimona.oauth_endpoint') => Http::response([
+            'access_token' => 'fake-token',
+            'expires_in' => 3600,
+        ]),
+        '*/declarations' => Http::sequence()
+            ->push([], 201, ['Location' => 'declarations/declaration-ref-1'])
+            ->push([], 201, ['Location' => 'declarations/update-declaration-ref'])
+            ->push([], 201, ['Location' => 'declarations/cancel-declaration-ref'])
+            ->push([], 201, ['Location' => 'declarations/new-declaration-ref']),
+        '*/declarations/declaration-ref-1' => Http::sequence()
+            ->push([], 404)  // Loop 2: still pending
+            ->push([         // Loop 3: accepted
+                'declarationStatus' => [
+                    'period' => ['id' => 'period-ref-1'],
+                    'result' => 'A',
+                    'anomalies' => [],
+                ],
+            ]),
+        '*/declarations/update-declaration-ref' => Http::sequence()
+            ->push([], 404)  // Loop 5: update still pending
+            ->push([         // Loop 6: update accepted with warning
+                'declarationStatus' => [
+                    'period' => ['id' => 'period-ref-1'],
+                    'result' => 'W',
+                    'anomalies' => [
+                        ['code' => '90017-369', 'description' => 'Overschrijding van het contingent'],
+                    ],
+                ],
+            ]),
+        '*/declarations/cancel-declaration-ref' => Http::sequence()
+            ->push([], 404)  // Loop 7: cancel pending
+            ->push([         // Loop 8: cancel accepted
+                'declarationStatus' => [
+                    'period' => ['id' => 'period-ref-1'],
+                    'result' => 'A',
+                    'anomalies' => [],
+                ],
+            ]),
+        '*/declarations/new-declaration-ref' => Http::sequence()
+            ->push([], 404)  // Loop 9: new create pending
+            ->push([         // Loop 10: new create accepted
+                'declarationStatus' => [
+                    'period' => ['id' => 'period-ref-2'],
+                    'result' => 'A',
+                    'anomalies' => [],
+                ],
+            ]),
+    ]);
+
+    $employments = collect([
+        EmploymentDataFactory::new()
+            ->id('emp-1')
+            ->workerType(WorkerType::Student)
+            ->startsAt('2025-10-01 07:00')
+            ->endsAt('2025-10-01 12:00')
+            ->create(),
+    ]);
+
+    $job = new SyncDimonaPeriodsJob(
+        $this->employerEnterpriseNumber,
+        $this->workerSocialSecurityNumber,
+        $this->period,
+        $employments
+    );
+
+    // Loop 1: Create declaration with Student worker type
+
+    $job->handle();
+
+    $dimonaPeriod1 = DimonaPeriod::query()->latest('id')->first();
+    $declaration1 = $dimonaPeriod1->dimona_declarations()->firstWhere('reference', 'declaration-ref-1');
+
+    expect($dimonaPeriod1->state)->toBe(DimonaPeriodState::Pending)
+        ->and($dimonaPeriod1->worker_type)->toBe(WorkerType::Student)
+        ->and($dimonaPeriod1->dimona_declarations()->count())->toBe(1)
+        ->and($declaration1->type)->toBe(DimonaDeclarationType::In)
+        ->and($declaration1->state)->toBe(DimonaDeclarationState::Pending);
 
     Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
+
+    // Loop 2: Sync pending declaration - still pending
+
+    (new UniqueLock(app(Cache::class)))->release($job);
+
+    $job->handle();
+
+    $dimonaPeriod1->refresh();
+    $declaration1->refresh();
+
+    expect($dimonaPeriod1->state)->toBe(DimonaPeriodState::Pending)
+        ->and($dimonaPeriod1->dimona_declarations()->count())->toBe(1)
+        ->and($declaration1->state)->toBe(DimonaDeclarationState::Pending);
+
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
+
+    // Loop 3: Declaration is now accepted
+
+    (new UniqueLock(app(Cache::class)))->release($job);
+
+    $job->handle();
+
+    $dimonaPeriod1->refresh();
+    $declaration1->refresh();
+
+    expect($dimonaPeriod1->state)->toBe(DimonaPeriodState::Accepted)
+        ->and($dimonaPeriod1->dimona_declarations()->count())->toBe(1)
+        ->and($declaration1->state)->toBe(DimonaDeclarationState::Accepted);
+
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
+
+    // Loop 4: Employment hours increase, triggering update
+
+    (new UniqueLock(app(Cache::class)))->release($job);
+
+    $updatedEmployment = clone $employments->first();
+    $updatedEmployment->endsAt = $updatedEmployment->endsAt->addHours(3);  // Increased from 12:00 to 15:00
+
+    $updatedEmployments = collect([
+        $updatedEmployment,
+    ]);
+
+    $job = new SyncDimonaPeriodsJob(
+        $this->employerEnterpriseNumber,
+        $this->workerSocialSecurityNumber,
+        $this->period,
+        $updatedEmployments
+    );
+
+    $job->handle();
+
+    $dimonaPeriod1->refresh();
+    $updateDeclaration = $dimonaPeriod1->dimona_declarations()->firstWhere('reference', 'update-declaration-ref');
+
+    expect($dimonaPeriod1->state)->toBe(DimonaPeriodState::Pending)
+        ->and($dimonaPeriod1->dimona_declarations()->count())->toBe(2)
+        ->and($updateDeclaration->type)->toBe(DimonaDeclarationType::Update)
+        ->and($updateDeclaration->state)->toBe(DimonaDeclarationState::Pending);
+
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 3);
+
+    // Loop 5: Sync update declaration - still pending
+
+    (new UniqueLock(app(Cache::class)))->release($job);
+
+    $job->handle();
+
+    $dimonaPeriod1->refresh();
+    $updateDeclaration->refresh();
+
+    expect($dimonaPeriod1->state)->toBe(DimonaPeriodState::Pending)
+        ->and($dimonaPeriod1->dimona_declarations()->count())->toBe(2)
+        ->and($updateDeclaration->state)->toBe(DimonaDeclarationState::Pending);
+
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 4);
+
+    // Loop 6: Sync - update accepted with warning (student contingent exceeded) -> triggers auto-cancel
+
+    (new UniqueLock(app(Cache::class)))->release($job);
+
+    $job->handle();
+
+    $dimonaPeriod1->refresh();
+    $updateDeclaration->refresh();
+    $cancelDeclaration = $dimonaPeriod1->dimona_declarations()->firstWhere('reference', 'cancel-declaration-ref');
+
+    expect($dimonaPeriod1->state)->toBe(DimonaPeriodState::Pending)
+        ->and($dimonaPeriod1->dimona_declarations()->count())->toBe(3)
+        ->and($updateDeclaration->state)->toBe(DimonaDeclarationState::AcceptedWithWarning)
+        ->and($updateDeclaration->anomalies)->toHaveCount(1)
+        ->and($cancelDeclaration->type)->toBe(DimonaDeclarationType::Cancel)
+        ->and($cancelDeclaration->state)->toBe(DimonaDeclarationState::Pending);
+
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 5);
+
+    // Loop 7: Sync cancel - still pending
+
+    (new UniqueLock(app(Cache::class)))->release($job);
+
+    $job->handle();
+
+    $dimonaPeriod1->refresh();
+    $cancelDeclaration->refresh();
+
+    expect($dimonaPeriod1->state)->toBe(DimonaPeriodState::Pending)
+        ->and($dimonaPeriod1->dimona_declarations()->count())->toBe(3)
+        ->and($cancelDeclaration->state)->toBe(DimonaDeclarationState::Pending);
+
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 6);
+
+    // Loop 8: Cancel accepted + Create new period with corrected worker type
+
+    (new UniqueLock(app(Cache::class)))->release($job);
+
+    $job->handle();
+
+    $dimonaPeriod1->refresh();
+    $cancelDeclaration->refresh();
+    $dimonaPeriod2 = DimonaPeriod::query()->latest('id')->first();
+    $newDeclaration = $dimonaPeriod2->dimona_declarations()->firstWhere('reference', 'new-declaration-ref');
+
+    expect($dimonaPeriod1->state)->toBe(DimonaPeriodState::Cancelled)
+        ->and($dimonaPeriod1->dimona_declarations()->count())->toBe(3)
+        ->and($cancelDeclaration->state)->toBe(DimonaDeclarationState::Accepted)
+        ->and(DimonaPeriod::query()->count())->toBe(2)
+        ->and($dimonaPeriod2->state)->toBe(DimonaPeriodState::Pending)
+        ->and($dimonaPeriod2->worker_type)->toBe(WorkerType::Other)
+        ->and($dimonaPeriod2->dimona_declarations()->count())->toBe(1)
+        ->and($newDeclaration->type)->toBe(DimonaDeclarationType::In)
+        ->and($newDeclaration->state)->toBe(DimonaDeclarationState::Pending);
+
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 7);
+
+    // Loop 9: Sync new declaration - still pending
+
+    (new UniqueLock(app(Cache::class)))->release($job);
+
+    $job->handle();
+
+    $dimonaPeriod2->refresh();
+    $newDeclaration->refresh();
+
+    expect($dimonaPeriod2->state)->toBe(DimonaPeriodState::Pending)
+        ->and($dimonaPeriod2->dimona_declarations()->count())->toBe(1)
+        ->and($newDeclaration->state)->toBe(DimonaDeclarationState::Pending);
+
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 8);
+
+    // Loop 10: New declaration accepted
+
+    (new UniqueLock(app(Cache::class)))->release($job);
+
+    $job->handle();
+
+    $dimonaPeriod2->refresh();
+    $newDeclaration->refresh();
+
+    expect($dimonaPeriod2->state)->toBe(DimonaPeriodState::Accepted)
+        ->and($dimonaPeriod2->dimona_declarations()->count())->toBe(1)
+        ->and($newDeclaration->state)->toBe(DimonaDeclarationState::Accepted);
+
+    Queue::assertPushed(SyncDimonaPeriodsJob::class, 8);
 });
 
 it('handles accepted with warning state without flexi or student anomaly', function () {

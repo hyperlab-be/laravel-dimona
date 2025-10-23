@@ -334,8 +334,49 @@ describe('does not reuse period with different', function () {
     });
 });
 
-it('does not reuse period in non-Accepted state', function (DimonaPeriodState $state) {
-    // Existing: Period with non-Accepted state
+it('reuses period in reusable state', function (DimonaPeriodState $state) {
+    // Existing: Period with New or Outdated state
+    $existingPeriod = makePeriod([
+        'start_date' => '2025-10-01',
+        'start_hour' => '08:00',
+        'end_date' => '2025-10-01',
+        'end_hour' => '12:00',
+        'worker_type' => WorkerType::Flexi,
+        'joint_commission_number' => 304,
+        'state' => $state,
+        'location_name' => 'Old Location',
+    ]);
+
+    // Expected: Matching period with employment
+    syncPeriods(new Collection([
+        makeExpectedPeriod([
+            'startDate' => '2025-10-01',
+            'startHour' => '09:00',
+            'endDate' => '2025-10-01',
+            'endHour' => '12:00',
+            'workerType' => WorkerType::Flexi,
+            'jointCommissionNumber' => 304,
+            'employmentIds' => ['emp-1'],
+        ]),
+    ]));
+
+    // Should reuse period
+    expect(DimonaPeriod::query()->count())->toBe(1);
+
+    // Verify period was reused and updated
+    $existingPeriod->refresh();
+    expect($existingPeriod->start_hour)->toBe('09:00')
+        ->and($existingPeriod->state)->toBe(DimonaPeriodState::Outdated)
+        ->and($existingPeriod->location_name)->toBe('Old Location')
+        ->and(getEmploymentIds($existingPeriod))->toBe(['emp-1']);
+})->with([
+    'New' => DimonaPeriodState::New,
+    'Outdated' => DimonaPeriodState::Outdated,
+    'Accepted' => DimonaPeriodState::Accepted,
+]);
+
+it('does not reuse period in non-reusable state', function (DimonaPeriodState $state) {
+    // Existing: Period with non-reusable state
     $existingPeriod = makePeriod([
         'start_date' => '2025-10-01',
         'start_hour' => '08:00',
@@ -359,24 +400,24 @@ it('does not reuse period in non-Accepted state', function (DimonaPeriodState $s
         ]),
     ]));
 
-    // Should create new period (only Accepted periods can be reused)
+    // Should create new period (only New, Outdated, and Accepted periods can be reused)
     expect(DimonaPeriod::query()->count())->toBe(2);
 
-    // Verify existing period with non-Accepted state remains unchanged
+    // Verify existing period remains unchanged
     $existingPeriod->refresh();
     expect($existingPeriod->state)->toBe($state)
         ->and(getEmploymentIds($existingPeriod))->toBe([]);
 
     // Verify new period was created
-    $newPeriod = DimonaPeriod::query()->where('state', DimonaPeriodState::New)->first();
+    $newPeriod = DimonaPeriod::query()->latest('id')->first();
     expect($newPeriod)->not->toBeNull()
         ->and($newPeriod->state)->toBe(DimonaPeriodState::New)
         ->and(getEmploymentIds($newPeriod))->toBe(['emp-1']);
 })->with([
-    'Waiting' => DimonaPeriodState::Waiting,
+    'Pending' => DimonaPeriodState::Pending,
     'AcceptedWithWarning' => DimonaPeriodState::AcceptedWithWarning,
     'Refused' => DimonaPeriodState::Refused,
-    'Outdated' => DimonaPeriodState::Outdated,
+    'Waiting' => DimonaPeriodState::Waiting,
     'Cancelled' => DimonaPeriodState::Cancelled,
     'Failed' => DimonaPeriodState::Failed,
 ]);

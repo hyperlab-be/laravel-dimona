@@ -141,6 +141,45 @@ describe('basic employment detachment', function () {
     });
 });
 
+describe('state filtering', function () {
+    it('affects periods in all states', function () {
+        // Existing: Periods in all possible states linked to emp-deleted
+        $states = [
+            DimonaPeriodState::New,
+            DimonaPeriodState::Pending,
+            DimonaPeriodState::Waiting,
+            DimonaPeriodState::Accepted,
+            DimonaPeriodState::AcceptedWithWarning,
+            DimonaPeriodState::Refused,
+            DimonaPeriodState::Cancelled,
+            DimonaPeriodState::Failed,
+            DimonaPeriodState::Outdated,
+        ];
+
+        $periods = [];
+        foreach ($states as $state) {
+            $periods[] = makePeriod([
+                'start_date' => '2025-10-01',
+                'start_hour' => '08:00',
+                'end_date' => '2025-10-01',
+                'end_hour' => '12:00',
+                'worker_type' => WorkerType::Flexi,
+                'joint_commission_number' => 304,
+                'state' => $state,
+            ], ['emp-deleted']);
+        }
+
+        // Expected: No periods (employments should be removed)
+        syncPeriods(new Collection([]));
+
+        // Should remove employments from all periods regardless of state
+        foreach ($periods as $period) {
+            $count = count(getEmploymentIds($period->refresh()));
+            expect($count)->toBe(0);
+        }
+    });
+});
+
 describe('scope filtering', function () {
     it('only affects periods within the specified date range', function () {
         // Existing: Two periods, one in range (2025-10-15), one out of range (2025-11-02)

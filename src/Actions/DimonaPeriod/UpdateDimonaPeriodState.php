@@ -104,6 +104,10 @@ class UpdateDimonaPeriodState
             return DimonaPeriodState::AcceptedWithWarning;
         }
 
+        if ($declaration->anomalies()->studentRequirementsAreNotMet()) {
+            return DimonaPeriodState::AcceptedWithWarning;
+        }
+
         return DimonaPeriodState::Accepted;
     }
 

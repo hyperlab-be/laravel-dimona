@@ -31,7 +31,7 @@ describe('resolve worker type', function () {
             expect($resolvedType)->toBe(WorkerType::Other);
         });
 
-        it('keeps original worker type when exception exists for Student worker', function () {
+        it('resolves worker type to Other when exception exists for Student worker', function () {
             // Create an exception in the database
             DimonaWorkerTypeException::query()->create([
                 'social_security_number' => '12345678901',
@@ -48,7 +48,7 @@ describe('resolve worker type', function () {
             );
 
             // Assert
-            expect($resolvedType)->toBe(WorkerType::Student);
+            expect($resolvedType)->toBe(WorkerType::Other);
         });
 
     });

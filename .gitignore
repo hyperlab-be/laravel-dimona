@@ -21,6 +21,7 @@ _ide_helper_models.php
 
 # Editors
 /.idea
+/.claude
 /.fleet
 /.vscode
 
