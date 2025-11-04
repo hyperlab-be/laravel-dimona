@@ -16,4 +16,9 @@ trait HasDimonaPeriods
             'dimona_period_id'
         );
     }
+
+    public function scopeWhereHasDimonaPeriod($query, DimonaPeriod $dimonaPeriod)
+    {
+        return $query->whereHas('dimona_periods', fn($q) => $q->where('id', $dimonaPeriod->id));
+    }
 }
