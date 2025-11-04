@@ -5,6 +5,8 @@ namespace Hyperlab\Dimona\Actions\DimonaPeriod;
 use Carbon\CarbonPeriodImmutable;
 use Hyperlab\Dimona\Data\DimonaPeriodData;
 use Hyperlab\Dimona\Enums\DimonaPeriodState;
+use Hyperlab\Dimona\Events\DimonaPeriodCreated;
+use Hyperlab\Dimona\Events\DimonaPeriodUpdated;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -187,12 +189,18 @@ class SyncDimonaPeriodsWithExpectations
         $dimonaPeriod->end_hour = $data->endHour;
         $dimonaPeriod->number_of_hours = $data->numberOfHours;
 
+        $wasUpdated = false;
         if ($dimonaPeriod->isDirty()) {
             $dimonaPeriod->state = DimonaPeriodState::Outdated;
             $dimonaPeriod->save();
+            $wasUpdated = true;
         }
 
-        $this->linkEmployments($dimonaPeriod, $data->employmentIds);
+        $employmentsChanged = $this->linkEmployments($dimonaPeriod, $data->employmentIds);
+
+        if ($wasUpdated || $employmentsChanged) {
+            DimonaPeriodUpdated::dispatch($dimonaPeriod);
+        }
     }
 
     private function createNewPeriod(DimonaPeriodData $data): void
@@ -218,20 +226,31 @@ class SyncDimonaPeriodsWithExpectations
         ]);
 
         $this->linkEmployments($newPeriod, $data->employmentIds);
+
+        DimonaPeriodCreated::dispatch($newPeriod);
     }
 
     /**
      * Link employment IDs to a dimona period.
      *
      * @param  array<string>  $employmentIds
+     * @return bool Whether any employments were added
      */
-    private function linkEmployments(DimonaPeriod $period, array $employmentIds): void
+    private function linkEmployments(DimonaPeriod $period, array $employmentIds): bool
     {
+        $employmentsChanged = false;
+
         foreach ($employmentIds as $employmentId) {
-            DB::table('dimona_period_employment')->insertOrIgnore([
+            $inserted = DB::table('dimona_period_employment')->insertOrIgnore([
                 'dimona_period_id' => $period->id,
                 'employment_id' => $employmentId,
             ]);
+
+            if ($inserted) {
+                $employmentsChanged = true;
+            }
         }
+
+        return $employmentsChanged;
     }
 }
