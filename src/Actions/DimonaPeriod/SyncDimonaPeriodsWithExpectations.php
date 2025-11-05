@@ -183,17 +183,39 @@ class SyncDimonaPeriodsWithExpectations
 
     private function updatePeriodFields(DimonaPeriod $dimonaPeriod, DimonaPeriodData $data): void
     {
-        $dimonaPeriod->start_date = $data->startDate;
-        $dimonaPeriod->start_hour = $data->startHour;
-        $dimonaPeriod->end_date = $data->endDate;
-        $dimonaPeriod->end_hour = $data->endHour;
-        $dimonaPeriod->number_of_hours = $data->numberOfHours;
-
         $wasUpdated = false;
-        if ($dimonaPeriod->isDirty()) {
+
+        if ($dimonaPeriod->start_date !== $data->startDate) {
+            $dimonaPeriod->start_date = $data->startDate;
+            $wasUpdated = true;
+        }
+
+        if ($dimonaPeriod->start_hour !== $data->startHour) {
+            $dimonaPeriod->start_hour = $data->startHour;
+            $wasUpdated = true;
+        }
+
+        if ($dimonaPeriod->end_date !== $data->endDate) {
+            $dimonaPeriod->end_date = $data->endDate;
+            $wasUpdated = true;
+        }
+
+        if ($dimonaPeriod->end_hour !== $data->endHour) {
+            $dimonaPeriod->end_hour = $data->endHour;
+            $wasUpdated = true;
+        }
+
+        if ($data->numberOfHours !== null && abs(($dimonaPeriod->number_of_hours ?? 0) - $data->numberOfHours) > 0.01) {
+            $dimonaPeriod->number_of_hours = $data->numberOfHours;
+            $wasUpdated = true;
+        } elseif ($data->numberOfHours === null && $dimonaPeriod->number_of_hours !== null) {
+            $dimonaPeriod->number_of_hours = $data->numberOfHours;
+            $wasUpdated = true;
+        }
+
+        if ($wasUpdated) {
             $dimonaPeriod->state = DimonaPeriodState::Outdated;
             $dimonaPeriod->save();
-            $wasUpdated = true;
         }
 
         $employmentsChanged = $this->linkEmployments($dimonaPeriod, $data->employmentIds);
