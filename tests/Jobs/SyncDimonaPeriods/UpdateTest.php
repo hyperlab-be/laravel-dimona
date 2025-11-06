@@ -1,5 +1,6 @@
 <?php
 
+use Carbon\CarbonImmutable;
 use Carbon\CarbonPeriodImmutable;
 use Hyperlab\Dimona\Data\EmploymentData;
 use Hyperlab\Dimona\Enums\DimonaDeclarationState;
@@ -9,8 +10,6 @@ use Hyperlab\Dimona\Enums\WorkerType;
 use Hyperlab\Dimona\Jobs\SyncDimonaPeriodsJob;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Tests\Factories\EmploymentDataFactory;
-use Illuminate\Bus\UniqueLock;
-use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
@@ -82,8 +81,6 @@ it('updates an existing dimona period when employment changes', function () {
 
     // Loop 2: Sync pending declaration - still pending
 
-    (new UniqueLock(app(Cache::class)))->release($job);
-
     $job->handle();
 
     $dimonaPeriod->refresh();
@@ -97,8 +94,6 @@ it('updates an existing dimona period when employment changes', function () {
 
     // Loop 3: Declaration is now accepted
 
-    (new UniqueLock(app(Cache::class)))->release($job);
-
     $job->handle();
 
     $dimonaPeriod->refresh();
@@ -111,8 +106,6 @@ it('updates an existing dimona period when employment changes', function () {
     Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
     // Loop 4: Employment changes, triggering update
-
-    (new UniqueLock(app(Cache::class)))->release($job);
 
     /** @var EmploymentData $updatedEmployment */
     $updatedEmployment = clone $employments->first();
@@ -143,8 +136,6 @@ it('updates an existing dimona period when employment changes', function () {
 
     // Loop 5: Sync update declaration - still pending
 
-    (new UniqueLock(app(Cache::class)))->release($job);
-
     $job->handle();
 
     $dimonaPeriod->refresh();
@@ -157,8 +148,6 @@ it('updates an existing dimona period when employment changes', function () {
     Queue::assertPushed(SyncDimonaPeriodsJob::class, 4);
 
     // Loop 6: Update declaration is accepted
-
-    (new UniqueLock(app(Cache::class)))->release($job);
 
     $job->handle();
 
@@ -231,8 +220,6 @@ it('updates existing dimona period when employment switches and details change',
 
     // Loop 2: Sync pending declaration - still pending
 
-    (new UniqueLock(app(Cache::class)))->release($job);
-
     $job->handle();
 
     $dimonaPeriod->refresh();
@@ -245,8 +232,6 @@ it('updates existing dimona period when employment switches and details change',
     Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
     // Loop 3: Declaration is now accepted
-
-    (new UniqueLock(app(Cache::class)))->release($job);
 
     $job->handle();
 
@@ -261,8 +246,6 @@ it('updates existing dimona period when employment switches and details change',
     Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
     // Loop 4: Employment switches
-
-    (new UniqueLock(app(Cache::class)))->release($job);
 
     /** @var EmploymentData $updatedEmployment */
     $updatedEmployment = clone $employments->first();
@@ -294,8 +277,6 @@ it('updates existing dimona period when employment switches and details change',
 
     // Loop 5: Sync update declaration - still pending
 
-    (new UniqueLock(app(Cache::class)))->release($job);
-
     $job->handle();
 
     $dimonaPeriod->refresh();
@@ -308,8 +289,6 @@ it('updates existing dimona period when employment switches and details change',
     Queue::assertPushed(SyncDimonaPeriodsJob::class, 4);
 
     // Loop 6: Update declaration is accepted
-
-    (new UniqueLock(app(Cache::class)))->release($job);
 
     $job->handle();
 
@@ -371,8 +350,6 @@ it('keeps existing dimona period when employment switches but details stay the s
 
     // Loop 2: Sync pending declaration - still pending
 
-    (new UniqueLock(app(Cache::class)))->release($job);
-
     $job->handle();
 
     $dimonaPeriod->refresh();
@@ -385,8 +362,6 @@ it('keeps existing dimona period when employment switches but details stay the s
     Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
     // Loop 3: Declaration is now accepted
-
-    (new UniqueLock(app(Cache::class)))->release($job);
 
     $job->handle();
 
@@ -401,8 +376,6 @@ it('keeps existing dimona period when employment switches but details stay the s
     Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
     // Loop 4: Employment switches
-
-    (new UniqueLock(app(Cache::class)))->release($job);
 
     /** @var EmploymentData $updatedEmployment */
     $updatedEmployment = clone $employments->first();

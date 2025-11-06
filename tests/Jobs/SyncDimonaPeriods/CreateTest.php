@@ -9,8 +9,6 @@ use Hyperlab\Dimona\Jobs\SyncDimonaPeriodsJob;
 use Hyperlab\Dimona\Models\DimonaDeclaration;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Tests\Factories\EmploymentDataFactory;
-use Illuminate\Bus\UniqueLock;
-use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
@@ -70,8 +68,6 @@ it('creates a new dimona period when no periods exist', function () {
     Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 
     // Loop 2: Sync pending declaration - accepted
-
-    (new UniqueLock(app(Cache::class)))->release($job);
 
     $job->handle();
 
@@ -141,8 +137,6 @@ it('creates multiple dimona periods for different time slots', function () {
 
     // Loop 2: Sync both pending declarations - still pending
 
-    (new UniqueLock(app(Cache::class)))->release($job);
-
     $job->handle();
 
     $declarations = DimonaDeclaration::query()->get();
@@ -152,8 +146,6 @@ it('creates multiple dimona periods for different time slots', function () {
     Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
     // Loop 3: Both declarations accepted
-
-    (new UniqueLock(app(Cache::class)))->release($job);
 
     $job->handle();
 
@@ -314,8 +306,6 @@ it('handles multiple pending declarations across different periods', function ()
 
     // Loop 2: Sync both declarations - still pending
 
-    (new UniqueLock(app(Cache::class)))->release($job);
-
     $job->handle();
 
     $declarations = DimonaDeclaration::query()->get();
@@ -326,8 +316,6 @@ it('handles multiple pending declarations across different periods', function ()
 
     // Loop 3: First is still pending, second is accepted
 
-    (new UniqueLock(app(Cache::class)))->release($job);
-
     $job->handle();
 
     $declarations = DimonaDeclaration::query()->get();
@@ -337,8 +325,6 @@ it('handles multiple pending declarations across different periods', function ()
     Queue::assertPushed(SyncDimonaPeriodsJob::class, 3);
 
     // Loop 4: First is now accepted too
-
-    (new UniqueLock(app(Cache::class)))->release($job);
 
     $job->handle();
 

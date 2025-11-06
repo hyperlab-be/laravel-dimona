@@ -11,6 +11,8 @@ use Hyperlab\Dimona\Enums\DimonaPeriodState;
 use Hyperlab\Dimona\Models\DimonaDeclaration;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Services\DimonaService;
+use Illuminate\Bus\UniqueLock;
+use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -18,6 +20,8 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+
+use function app;
 
 class SyncDimonaPeriodsJob implements ShouldBeUnique, ShouldQueue
 {
@@ -179,6 +183,9 @@ class SyncDimonaPeriodsJob implements ShouldBeUnique, ShouldQueue
     {
         $delay = $this->calculateBackoff();
 
+        // Release the unique lock to allow redispatching
+        $this->releaseUniqueLock();
+
         self::dispatch(
             $this->employerEnterpriseNumber,
             $this->workerSocialSecurityNumber,
@@ -186,6 +193,11 @@ class SyncDimonaPeriodsJob implements ShouldBeUnique, ShouldQueue
             $this->employments,
             $this->clientId
         )->delay($delay);
+    }
+
+    private function releaseUniqueLock(): void
+    {
+        (new UniqueLock(app(Cache::class)))->release($this);
     }
 
     /**

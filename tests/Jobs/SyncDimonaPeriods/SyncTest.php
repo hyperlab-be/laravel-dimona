@@ -7,8 +7,6 @@ use Hyperlab\Dimona\Enums\DimonaPeriodState;
 use Hyperlab\Dimona\Jobs\SyncDimonaPeriodsJob;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Tests\Factories\EmploymentDataFactory;
-use Illuminate\Bus\UniqueLock;
-use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
@@ -65,8 +63,6 @@ describe('Sync pending declarations', function () {
 
         // Loop 2: Sync pending declaration and mark as accepted
 
-        (new UniqueLock(app(Cache::class)))->release($job);
-
         $job->handle(2);
 
         $dimonaPeriod->refresh();
@@ -122,8 +118,6 @@ describe('Sync pending declarations', function () {
 
         // Loop 2: Sync - still pending, redispatch
 
-        (new UniqueLock(app(Cache::class)))->release($job);
-
         $job->handle();
 
         $declaration->refresh();
@@ -134,8 +128,6 @@ describe('Sync pending declarations', function () {
 
         // Loop 3: Sync - still pending, redispatch
 
-        (new UniqueLock(app(Cache::class)))->release($job);
-
         $job->handle();
 
         $declaration->refresh();
@@ -145,8 +137,6 @@ describe('Sync pending declarations', function () {
         Queue::assertPushed(SyncDimonaPeriodsJob::class, 3);
 
         // Loop 4: Sync - now accepted, no redispatch
-
-        (new UniqueLock(app(Cache::class)))->release($job);
 
         $job->handle();
 
@@ -203,8 +193,6 @@ describe('Sync pending declarations', function () {
 
         // Loop 2: Sync - service down, remains pending and redispatches
 
-        (new UniqueLock(app(Cache::class)))->release($job);
-
         $job->handle();
 
         $declaration->refresh();
@@ -214,8 +202,6 @@ describe('Sync pending declarations', function () {
         Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
         // Loop 3: Sync - now accepted
-
-        (new UniqueLock(app(Cache::class)))->release($job);
 
         $job->handle();
 
@@ -263,8 +249,6 @@ describe('Sync pending declarations', function () {
         Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 
         // Loop 2: Sync - invalid request, marked as failed
-
-        (new UniqueLock(app(Cache::class)))->release($job);
 
         $job->handle();
 
@@ -321,8 +305,6 @@ describe('Sync pending declarations', function () {
         Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 
         // Loop 2: Sync - refused
-
-        (new UniqueLock(app(Cache::class)))->release($job);
 
         $job->handle();
 
@@ -393,8 +375,6 @@ describe('Sync pending declarations', function () {
 
         // Loop 2: Sync - waiting state
 
-        (new UniqueLock(app(Cache::class)))->release($job);
-
         $job->handle();
 
         $declaration->refresh();
@@ -407,8 +387,6 @@ describe('Sync pending declarations', function () {
 
         // Loop 3: Sync - still waiting, continue to redispatch
 
-        (new UniqueLock(app(Cache::class)))->release($job);
-
         $job->handle();
 
         $declaration->refresh();
@@ -420,8 +398,6 @@ describe('Sync pending declarations', function () {
         Queue::assertPushed(SyncDimonaPeriodsJob::class, 3);
 
         // Loop 4: Sync - now accepted
-
-        (new UniqueLock(app(Cache::class)))->release($job);
 
         $job->handle();
 
@@ -486,8 +462,6 @@ describe('Sync pending declarations', function () {
 
         // Loop 2: Sync - waiting state
 
-        (new UniqueLock(app(Cache::class)))->release($job);
-
         $job->handle();
 
         $declaration->refresh();
@@ -499,8 +473,6 @@ describe('Sync pending declarations', function () {
         Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
         // Loop 3: Sync - refused
-
-        (new UniqueLock(app(Cache::class)))->release($job);
 
         $job->handle();
 
@@ -558,8 +530,6 @@ describe('Sync pending declarations', function () {
 
         // Loop 2: Sync pending declaration - still pending
 
-        (new UniqueLock(app(Cache::class)))->release($job);
-
         $job->handle();
 
         $declaration->refresh();
@@ -569,8 +539,6 @@ describe('Sync pending declarations', function () {
         Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
         // Loop 3: Declaration is now accepted
-
-        (new UniqueLock(app(Cache::class)))->release($job);
 
         $job->handle();
 
@@ -583,8 +551,6 @@ describe('Sync pending declarations', function () {
         Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
         // Loop 4: Already accepted, no pending work - should not re-dispatch
-
-        (new UniqueLock(app(Cache::class)))->release($job);
 
         $job->handle();
 

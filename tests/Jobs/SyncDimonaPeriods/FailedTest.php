@@ -10,8 +10,6 @@ use Hyperlab\Dimona\Jobs\SyncDimonaPeriodsJob;
 use Hyperlab\Dimona\Models\DimonaDeclaration;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Tests\Factories\EmploymentDataFactory;
-use Illuminate\Bus\UniqueLock;
-use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
@@ -107,8 +105,6 @@ describe('Failed declaration handling', function () {
 
         // Loop 2: Retry with corrected data (different end time)
 
-        (new UniqueLock(app(Cache::class)))->release($job);
-
         $correctedEmployments = collect([
             EmploymentDataFactory::new()
                 ->id('emp-1')
@@ -144,8 +140,6 @@ describe('Failed declaration handling', function () {
         Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
         // Loop 3: Sync successful declaration
-
-        (new UniqueLock(app(Cache::class)))->release($job);
 
         $job->handle();
 
@@ -192,8 +186,6 @@ describe('Failed declaration handling', function () {
 
         // Loop 2: Second attempt with same data - should find exact match and not retry
 
-        (new UniqueLock(app(Cache::class)))->release($job);
-
         $job = new SyncDimonaPeriodsJob(
             $this->employerEnterpriseNumber,
             $this->workerSocialSecurityNumber,
@@ -213,8 +205,6 @@ describe('Failed declaration handling', function () {
         Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 
         // Loop 3: Third attempt with same data - still no retry
-
-        (new UniqueLock(app(Cache::class)))->release($job);
 
         $job = new SyncDimonaPeriodsJob(
             $this->employerEnterpriseNumber,

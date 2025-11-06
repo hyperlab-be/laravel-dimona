@@ -7,8 +7,6 @@ use Hyperlab\Dimona\Enums\DimonaPeriodState;
 use Hyperlab\Dimona\Jobs\SyncDimonaPeriodsJob;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Tests\Factories\EmploymentDataFactory;
-use Illuminate\Bus\UniqueLock;
-use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
@@ -77,8 +75,6 @@ it('cancels a dimona period when employment is removed', function () {
 
     // Loop 2: Sync pending declaration - still pending
 
-    (new UniqueLock(app(Cache::class)))->release($job);
-
     $job->handle();
 
     $dimonaPeriod->refresh();
@@ -92,8 +88,6 @@ it('cancels a dimona period when employment is removed', function () {
 
     // Loop 3: Declaration is now accepted
 
-    (new UniqueLock(app(Cache::class)))->release($job);
-
     $job->handle();
 
     $dimonaPeriod->refresh();
@@ -106,8 +100,6 @@ it('cancels a dimona period when employment is removed', function () {
     Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
     // Loop 4: Employment removed, triggering cancel
-
-    (new UniqueLock(app(Cache::class)))->release($job);
 
     $job = new SyncDimonaPeriodsJob(
         $this->employerEnterpriseNumber,
@@ -130,8 +122,6 @@ it('cancels a dimona period when employment is removed', function () {
 
     // Loop 5: Sync cancel declaration - still pending
 
-    (new UniqueLock(app(Cache::class)))->release($job);
-
     $job->handle();
 
     $dimonaPeriod->refresh();
@@ -144,8 +134,6 @@ it('cancels a dimona period when employment is removed', function () {
     Queue::assertPushed(SyncDimonaPeriodsJob::class, 4);
 
     // Loop 6: Cancel declaration is accepted
-
-    (new UniqueLock(app(Cache::class)))->release($job);
 
     $job->handle();
 

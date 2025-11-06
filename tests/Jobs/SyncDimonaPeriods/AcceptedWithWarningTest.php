@@ -8,8 +8,6 @@ use Hyperlab\Dimona\Enums\WorkerType;
 use Hyperlab\Dimona\Jobs\SyncDimonaPeriodsJob;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Hyperlab\Dimona\Tests\Factories\EmploymentDataFactory;
-use Illuminate\Bus\UniqueLock;
-use Illuminate\Contracts\Cache\Repository as Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Queue;
 
@@ -91,8 +89,6 @@ it('handles accepted with warning state with flexi anomaly', function () {
 
     // Loop 2: Sync - accepted with warning (flexi requirements not met) -> triggers auto-cancel
 
-    (new UniqueLock(app(Cache::class)))->release($job);
-
     $job->handle();
 
     $dimonaPeriod1->refresh();
@@ -110,8 +106,6 @@ it('handles accepted with warning state with flexi anomaly', function () {
 
     // Loop 3: Sync cancel - still pending
 
-    (new UniqueLock(app(Cache::class)))->release($job);
-
     $job->handle();
 
     $dimonaPeriod1->refresh();
@@ -124,8 +118,6 @@ it('handles accepted with warning state with flexi anomaly', function () {
     Queue::assertPushed(SyncDimonaPeriodsJob::class, 3);
 
     // Loop 4: Cancel accepted + Create new period with corrected worker type
-
-    (new UniqueLock(app(Cache::class)))->release($job);
 
     $job->handle(4);
 
@@ -148,8 +140,6 @@ it('handles accepted with warning state with flexi anomaly', function () {
 
     // Loop 6: Sync new declaration - still pending
 
-    (new UniqueLock(app(Cache::class)))->release($job);
-
     $job->handle();
 
     $dimonaPeriod2->refresh();
@@ -162,8 +152,6 @@ it('handles accepted with warning state with flexi anomaly', function () {
     Queue::assertPushed(SyncDimonaPeriodsJob::class, 5);
 
     // Loop 7: New declaration accepted
-
-    (new UniqueLock(app(Cache::class)))->release($job);
 
     $job->handle();
 
@@ -246,8 +234,6 @@ it('handles accepted with warning state with student anomaly', function () {
 
     // Loop 2: Sync - accepted with warning (student contingent exceeded) -> triggers auto-cancel
 
-    (new UniqueLock(app(Cache::class)))->release($job);
-
     $job->handle();
 
     $dimonaPeriod1->refresh();
@@ -265,8 +251,6 @@ it('handles accepted with warning state with student anomaly', function () {
 
     // Loop 3: Sync cancel - still pending
 
-    (new UniqueLock(app(Cache::class)))->release($job);
-
     $job->handle();
 
     $dimonaPeriod1->refresh();
@@ -279,8 +263,6 @@ it('handles accepted with warning state with student anomaly', function () {
     Queue::assertPushed(SyncDimonaPeriodsJob::class, 3);
 
     // Loop 4: Cancel accepted + Create new period with corrected worker type
-
-    (new UniqueLock(app(Cache::class)))->release($job);
 
     $job->handle(4);
 
@@ -303,8 +285,6 @@ it('handles accepted with warning state with student anomaly', function () {
 
     // Loop 6: Sync new declaration - still pending
 
-    (new UniqueLock(app(Cache::class)))->release($job);
-
     $job->handle();
 
     $dimonaPeriod2->refresh();
@@ -317,8 +297,6 @@ it('handles accepted with warning state with student anomaly', function () {
     Queue::assertPushed(SyncDimonaPeriodsJob::class, 5);
 
     // Loop 7: New declaration accepted
-
-    (new UniqueLock(app(Cache::class)))->release($job);
 
     $job->handle();
 
@@ -416,8 +394,6 @@ it('handles accepted with warning state with student anomaly on update declarati
 
     // Loop 2: Sync pending declaration - still pending
 
-    (new UniqueLock(app(Cache::class)))->release($job);
-
     $job->handle();
 
     $dimonaPeriod1->refresh();
@@ -431,8 +407,6 @@ it('handles accepted with warning state with student anomaly on update declarati
 
     // Loop 3: Declaration is now accepted
 
-    (new UniqueLock(app(Cache::class)))->release($job);
-
     $job->handle();
 
     $dimonaPeriod1->refresh();
@@ -445,8 +419,6 @@ it('handles accepted with warning state with student anomaly on update declarati
     Queue::assertPushed(SyncDimonaPeriodsJob::class, 2);
 
     // Loop 4: Employment hours increase, triggering update
-
-    (new UniqueLock(app(Cache::class)))->release($job);
 
     $updatedEmployment = clone $employments->first();
     $updatedEmployment->endsAt = $updatedEmployment->endsAt->addHours(3);  // Increased from 12:00 to 15:00
@@ -476,8 +448,6 @@ it('handles accepted with warning state with student anomaly on update declarati
 
     // Loop 5: Sync update declaration - still pending
 
-    (new UniqueLock(app(Cache::class)))->release($job);
-
     $job->handle();
 
     $dimonaPeriod1->refresh();
@@ -490,8 +460,6 @@ it('handles accepted with warning state with student anomaly on update declarati
     Queue::assertPushed(SyncDimonaPeriodsJob::class, 4);
 
     // Loop 6: Sync - update accepted with warning (student contingent exceeded) -> triggers auto-cancel
-
-    (new UniqueLock(app(Cache::class)))->release($job);
 
     $job->handle();
 
@@ -510,8 +478,6 @@ it('handles accepted with warning state with student anomaly on update declarati
 
     // Loop 7: Sync cancel - still pending
 
-    (new UniqueLock(app(Cache::class)))->release($job);
-
     $job->handle();
 
     $dimonaPeriod1->refresh();
@@ -524,8 +490,6 @@ it('handles accepted with warning state with student anomaly on update declarati
     Queue::assertPushed(SyncDimonaPeriodsJob::class, 6);
 
     // Loop 8: Cancel accepted + Create new period with corrected worker type
-
-    (new UniqueLock(app(Cache::class)))->release($job);
 
     $job->handle();
 
@@ -548,8 +512,6 @@ it('handles accepted with warning state with student anomaly on update declarati
 
     // Loop 9: Sync new declaration - still pending
 
-    (new UniqueLock(app(Cache::class)))->release($job);
-
     $job->handle();
 
     $dimonaPeriod2->refresh();
@@ -562,8 +524,6 @@ it('handles accepted with warning state with student anomaly on update declarati
     Queue::assertPushed(SyncDimonaPeriodsJob::class, 8);
 
     // Loop 10: New declaration accepted
-
-    (new UniqueLock(app(Cache::class)))->release($job);
 
     $job->handle();
 
@@ -624,8 +584,6 @@ it('handles accepted with warning state without flexi or student anomaly', funct
     Queue::assertPushed(SyncDimonaPeriodsJob::class, 1);
 
     // Loop 2: Sync - accepted with warning but no auto-cancel anomaly, should become Accepted
-
-    (new UniqueLock(app(Cache::class)))->release($job);
 
     $job->handle();
 
