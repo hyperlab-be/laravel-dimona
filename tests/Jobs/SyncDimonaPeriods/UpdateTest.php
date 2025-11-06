@@ -1,6 +1,5 @@
 <?php
 
-use Carbon\CarbonImmutable;
 use Carbon\CarbonPeriodImmutable;
 use Hyperlab\Dimona\Data\EmploymentData;
 use Hyperlab\Dimona\Enums\DimonaDeclarationState;
