@@ -20,6 +20,8 @@ class NisCodeService
         return match ($country) {
             EmploymentLocationCountry::Belgium => 150,
             EmploymentLocationCountry::Netherlands => 129,
+            EmploymentLocationCountry::Germany => 94,
+            EmploymentLocationCountry::France => 114,
         };
     }
 
