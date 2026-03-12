@@ -2,13 +2,14 @@
 
 namespace Hyperlab\Dimona\Facades;
 
+use Hyperlab\Dimona\DimonaManager;
 use Illuminate\Support\Facades\Facade;
 
 /**
  * @method static \Hyperlab\Dimona\DimonaManager client(?string $clientId = null)
  * @method static void declare(string $employerEnterpriseNumber, string $workerSocialSecurityNumber, \Carbon\CarbonPeriodImmutable $period, \Illuminate\Support\Collection $employments)
  *
- * @see \Hyperlab\Dimona\DimonaManager
+ * @see DimonaManager
  */
 class Dimona extends Facade
 {

@@ -70,7 +70,7 @@ it('throws an exception when no createDeclaration response is mocked', function 
     $mock = new MockDimonaApiClient;
 
     expect(fn () => $mock->createDeclaration([]))
-        ->toThrow(\Exception::class, 'No mocked response for createDeclaration');
+        ->toThrow(Exception::class, 'No mocked response for createDeclaration');
 });
 
 it('can mock exceptions for createDeclaration', function () {
@@ -85,7 +85,7 @@ it('throws an exception when no getDeclaration response is mocked', function () 
     $mock = new MockDimonaApiClient;
 
     expect(fn () => $mock->getDeclaration('test-reference'))
-        ->toThrow(\Exception::class, "No mocked response for getDeclaration with reference 'test-reference'");
+        ->toThrow(Exception::class, "No mocked response for getDeclaration with reference 'test-reference'");
 });
 
 it('can chain mock methods', function () {
