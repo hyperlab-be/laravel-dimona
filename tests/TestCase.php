@@ -3,6 +3,7 @@
 namespace Hyperlab\Dimona\Tests;
 
 use Hyperlab\Dimona\DimonaServiceProvider;
+use Hyperlab\Dimona\Tests\Models\Employment;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\File;
 use Orchestra\Testbench\TestCase as Orchestra;
@@ -48,6 +49,6 @@ class TestCase extends Orchestra
         config()->set('dimona.default_client', 'test-client');
 
         // Configure the employment model for tests
-        config()->set('dimona.employment_model', \Hyperlab\Dimona\Tests\Models\Employment::class);
+        config()->set('dimona.employment_model', Employment::class);
     }
 }
