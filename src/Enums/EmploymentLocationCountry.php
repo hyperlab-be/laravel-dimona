@@ -8,4 +8,6 @@ enum EmploymentLocationCountry: string
     case Netherlands = 'nl';
     case Germany = 'de';
     case France = 'fr';
+    case Spain = 'es';
+    case Italy = 'it';
 }
