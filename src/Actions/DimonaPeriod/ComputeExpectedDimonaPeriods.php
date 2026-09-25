@@ -8,10 +8,17 @@ use Hyperlab\Dimona\Data\EmploymentData;
 use Hyperlab\Dimona\Enums\WorkerType;
 use Hyperlab\Dimona\Services\WorkerTypeExceptionService;
 use Illuminate\Support\Collection;
+use LogicException;
 
 class ComputeExpectedDimonaPeriods
 {
     private const string TIMEZONE = 'Europe/Brussels';
+
+    /**
+     * An occasional worker can be declared for at most this many consecutive days,
+     * a longer series is declared as a single Other period.
+     */
+    private const int MAX_CONSECUTIVE_OCCASIONAL_DAYS = 2;
 
     private string $employerEnterpriseNumber;
 
@@ -37,10 +44,15 @@ class ComputeExpectedDimonaPeriods
         $this->employerEnterpriseNumber = $employerEnterpriseNumber;
         $this->workerSocialSecurityNumber = $workerSocialSecurityNumber;
 
-        return $employments
+        [$occasionalEmployments, $employments] = $employments
             ->each(fn (EmploymentData $employment) => $this->resolveWorkerType($employment))
+            ->partition(fn (EmploymentData $employment) => $employment->workerType === WorkerType::Occasional);
+
+        return $employments
             ->groupBy(fn (EmploymentData $employment) => $this->generateGroupingKey($employment))
-            ->flatMap(fn (Collection $employments) => $this->createDimonaPeriods($employments));
+            ->flatMap(fn (Collection $employments) => $this->createDimonaPeriods($employments))
+            ->merge($this->createOccasionalDimonaPeriods($occasionalEmployments))
+            ->values();
     }
 
     private function resolveWorkerType(EmploymentData $employment): void
@@ -49,6 +61,7 @@ class ComputeExpectedDimonaPeriods
             workerSocialSecurityNumber: $this->workerSocialSecurityNumber,
             workerType: $employment->workerType,
             employmentStartsAt: $employment->startsAt,
+            jointCommissionNumber: $employment->jointCommissionNumber,
         );
     }
 
@@ -71,6 +84,7 @@ class ComputeExpectedDimonaPeriods
                         WorkerType::Flexi => $this->createOrUpdateFlexiPeriod($dimonaPeriods, $employment),
                         WorkerType::Student => $this->createOrUpdateStudentPeriod($dimonaPeriods, $employment),
                         WorkerType::Other => $this->createOrUpdateOtherPeriod($dimonaPeriods, $employment),
+                        WorkerType::Occasional => throw new LogicException('Occasional employments are grouped per series of consecutive days.'),
                     };
 
                     return $dimonaPeriods;
@@ -144,6 +158,96 @@ class ComputeExpectedDimonaPeriods
                 location: $employment->location,
             ));
         }
+    }
+
+    /**
+     * Occasional employments are grouped per joint commission into series of consecutive days.
+     * A short series is declared per day, a longer one as a single Other period.
+     */
+    private function createOccasionalDimonaPeriods(Collection $employments): Collection
+    {
+        return $employments
+            ->groupBy(fn (EmploymentData $employment) => $employment->jointCommissionNumber)
+            ->flatMap(fn (Collection $employments) => $this->groupIntoConsecutiveDays($employments))
+            ->flatMap(fn (Collection $days) => $days->count() > self::MAX_CONSECUTIVE_OCCASIONAL_DAYS
+                ? [$this->createOtherPeriodForConsecutiveDays($days)]
+                : $days->map(fn (Collection $employments) => $this->createOccasionalPeriod($employments))->values()
+            );
+    }
+
+    /**
+     * @return Collection<Collection<string, Collection<EmploymentData>>> series of consecutive days, keyed by date
+     */
+    private function groupIntoConsecutiveDays(Collection $employments): Collection
+    {
+        return $employments
+            ->sortBy('startsAt')
+            ->groupBy(fn (EmploymentData $employment) => $this->formatDate($employment->startsAt))
+            ->reduce(
+                function (Collection $series, Collection $employments, string $date) {
+                    /** @var Collection|null $lastSeries */
+                    $lastSeries = $series->last();
+                    $lastDate = $lastSeries?->keys()->last();
+
+                    if ($lastDate && CarbonImmutable::parse($lastDate)->addDay()->format('Y-m-d') === $date) {
+                        $lastSeries->put($date, $employments);
+                    } else {
+                        $series->push(new Collection([$date => $employments]));
+                    }
+
+                    return $series;
+                },
+                new Collection
+            );
+    }
+
+    /**
+     * A single occasional period for all employments on one day, from the earliest start to the latest end.
+     */
+    private function createOccasionalPeriod(Collection $employments): DimonaPeriodData
+    {
+        /** @var EmploymentData $firstEmployment */
+        $firstEmployment = $employments->sortBy('startsAt')->first();
+        $endsAt = $employments->max('endsAt');
+
+        return new DimonaPeriodData(
+            employmentIds: $employments->pluck('id')->all(),
+            employerEnterpriseNumber: $this->employerEnterpriseNumber,
+            workerSocialSecurityNumber: $this->workerSocialSecurityNumber,
+            jointCommissionNumber: $firstEmployment->jointCommissionNumber,
+            workerType: WorkerType::Occasional,
+            startDate: $this->formatDate($firstEmployment->startsAt),
+            startHour: $this->formatHour($firstEmployment->startsAt),
+            endDate: $this->formatDate($endsAt),
+            endHour: $this->formatHour($endsAt),
+            numberOfHours: null,
+            location: $firstEmployment->location,
+        );
+    }
+
+    /**
+     * A single Other period from the first to the last day of the series.
+     */
+    private function createOtherPeriodForConsecutiveDays(Collection $days): DimonaPeriodData
+    {
+        $employments = $days->flatten(1);
+
+        /** @var EmploymentData $firstEmployment */
+        $firstEmployment = $employments->sortBy('startsAt')->first();
+
+        return new DimonaPeriodData(
+            employmentIds: $employments->pluck('id')->all(),
+            employerEnterpriseNumber: $this->employerEnterpriseNumber,
+            workerSocialSecurityNumber: $this->workerSocialSecurityNumber,
+            jointCommissionNumber: $firstEmployment->jointCommissionNumber,
+            workerType: WorkerType::Other,
+            startDate: $this->formatDate($firstEmployment->startsAt),
+            startHour: null,
+            endDate: $this->formatDate($employments->max('endsAt')),
+            endHour: null,
+            numberOfHours: null,
+            location: $firstEmployment->location,
+        );
     }
 
     private function formatDate(CarbonImmutable $date): string
