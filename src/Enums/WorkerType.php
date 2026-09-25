@@ -7,4 +7,5 @@ enum WorkerType: string
     case Student = 'student';
     case Flexi = 'flexi';
     case Other = 'other';
+    case Occasional = 'occasional';
 }

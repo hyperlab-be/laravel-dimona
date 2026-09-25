@@ -2,6 +2,7 @@
 
 namespace Hyperlab\Dimona\Services;
 
+use Carbon\CarbonImmutable;
 use Hyperlab\Dimona\Enums\WorkerType;
 use Hyperlab\Dimona\Models\DimonaPeriod;
 use Illuminate\Support\Str;
@@ -32,6 +33,7 @@ class DimonaPayloadBuilder
                         WorkerType::Student => 'STU',
                         WorkerType::Flexi => 'FLX',
                         WorkerType::Other => 'OTH',
+                        WorkerType::Occasional => 'EXT',
                     },
                 ],
             ],
@@ -55,14 +57,16 @@ class DimonaPayloadBuilder
             ];
         }
 
-        if ($dimonaPeriod->worker_type === WorkerType::Flexi) {
+        if ($this->isDeclaredWithHours($dimonaPeriod)) {
             $payload['dimonaIn']['startDate'] = $dimonaPeriod->start_date;
             $payload['dimonaIn']['startHour'] = Str::remove(':', $dimonaPeriod->start_hour);
             $payload['dimonaIn']['endDate'] = $dimonaPeriod->end_date;
             $payload['dimonaIn']['endHour'] = Str::remove(':', $dimonaPeriod->end_hour);
         } else {
             $payload['dimonaIn']['startDate'] = $dimonaPeriod->start_date;
-            $payload['dimonaIn']['endDate'] = $dimonaPeriod->start_date;
+            $payload['dimonaIn']['endDate'] = $this->coversConsecutiveDays($dimonaPeriod)
+                ? $dimonaPeriod->end_date
+                : $dimonaPeriod->start_date;
         }
 
         return $payload;
@@ -80,14 +84,16 @@ class DimonaPayloadBuilder
             $payload['dimonaUpdate']['plannedHoursNumber'] = $dimonaPeriod->number_of_hours ? ceil($dimonaPeriod->number_of_hours) : null;
         }
 
-        if ($dimonaPeriod->worker_type === WorkerType::Flexi) {
+        if ($this->isDeclaredWithHours($dimonaPeriod)) {
             $payload['dimonaUpdate']['startDate'] = $dimonaPeriod->start_date;
             $payload['dimonaUpdate']['startHour'] = Str::remove(':', $dimonaPeriod->start_hour);
             $payload['dimonaUpdate']['endDate'] = $dimonaPeriod->end_date;
             $payload['dimonaUpdate']['endHour'] = Str::remove(':', $dimonaPeriod->end_hour);
         } else {
             $payload['dimonaUpdate']['startDate'] = $dimonaPeriod->start_date;
-            $payload['dimonaUpdate']['endDate'] = $dimonaPeriod->start_date;
+            $payload['dimonaUpdate']['endDate'] = $this->coversConsecutiveDays($dimonaPeriod)
+                ? $dimonaPeriod->end_date
+                : $dimonaPeriod->start_date;
         }
 
         return $payload;
@@ -100,5 +106,25 @@ class DimonaPayloadBuilder
                 'periodId' => intval($dimonaPeriod->reference),
             ],
         ];
+    }
+
+    private function isDeclaredWithHours(DimonaPeriod $dimonaPeriod): bool
+    {
+        return in_array($dimonaPeriod->worker_type, [WorkerType::Flexi, WorkerType::Occasional], true);
+    }
+
+    /**
+     * A single day period ends at most the next day, when the shift runs past midnight, and is
+     * declared for its start date only. An Other period that ends later covers a series of
+     * consecutive occasional days (see ComputeExpectedDimonaPeriods::MAX_CONSECUTIVE_OCCASIONAL_DAYS)
+     * and is declared up to its end date.
+     */
+    private function coversConsecutiveDays(DimonaPeriod $dimonaPeriod): bool
+    {
+        if ($dimonaPeriod->worker_type !== WorkerType::Other || ! $dimonaPeriod->end_date) {
+            return false;
+        }
+
+        return CarbonImmutable::parse($dimonaPeriod->start_date)->addDay()->lt($dimonaPeriod->end_date);
     }
 }

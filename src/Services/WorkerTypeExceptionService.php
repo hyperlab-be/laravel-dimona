@@ -19,7 +19,7 @@ class WorkerTypeExceptionService
      * Resolve the correct worker type based on exceptions
      */
     public function resolveWorkerType(
-        string $workerSocialSecurityNumber, WorkerType $workerType, CarbonImmutable $employmentStartsAt
+        string $workerSocialSecurityNumber, WorkerType $workerType, CarbonImmutable $employmentStartsAt, ?int $jointCommissionNumber = null
     ): WorkerType {
         if ($workerType === WorkerType::Flexi) {
             $exceptionExists = DimonaWorkerTypeException::query()
@@ -29,7 +29,7 @@ class WorkerTypeExceptionService
                 ->where('worker_type', $workerType)
                 ->exists();
 
-            return $exceptionExists ? WorkerType::Other : $workerType;
+            return $exceptionExists ? $this->fallbackWorkerType($jointCommissionNumber) : $workerType;
         }
 
         if ($workerType === WorkerType::Student) {
@@ -40,10 +40,22 @@ class WorkerTypeExceptionService
                 ->where('worker_type', $workerType)
                 ->exists();
 
-            return $exceptionExists ? WorkerType::Other : $workerType;
+            return $exceptionExists ? $this->fallbackWorkerType($jointCommissionNumber) : $workerType;
         }
 
         return $workerType;
+    }
+
+    /**
+     * The worker type to declare when the flexi or student requirements are not met
+     */
+    private function fallbackWorkerType(?int $jointCommissionNumber): WorkerType
+    {
+        $occasionalJointCommissions = config('dimona.occasional_joint_commissions', []);
+
+        return in_array($jointCommissionNumber, $occasionalJointCommissions, true)
+            ? WorkerType::Occasional
+            : WorkerType::Other;
     }
 
     /**

@@ -59,6 +59,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Occasional Joint Commissions
+    |--------------------------------------------------------------------------
+    |
+    | Joint commissions in which a flexi or student employment that falls
+    | within a worker type exception is declared as an occasional worker
+    | (EXT) instead of Other (OTH). More than two consecutive days of
+    | occasional work are declared as a single Other (OTH) period.
+    |
+    */
+
+    'occasional_joint_commissions' => [],
+
+    /*
+    |--------------------------------------------------------------------------
     | API Clients
     |--------------------------------------------------------------------------
     |
@@ -202,6 +216,7 @@ Transforms raw employment data into expected Dimona periods:
   - **Flexi**: One period per employment with exact start/end times
   - **Student**: Aggregates hours for the day, tracks location changes
   - **Other**: Aggregates employments for the start date
+  - **Occasional**: One period per day, see [Occasional workers](#occasional-workers)
 - Applies worker type exceptions (overrides based on past API responses)
 
 #### **Phase 3: Sync Expectations with Actual Periods**
@@ -212,6 +227,7 @@ Smart matching algorithm to minimize API calls:
   3. Reuse an unlinked period → links it to the employment
   4. Create a new period (state: `New`) → sends in declaration
 - Detaches deleted employments from periods
+- Detaches employments from the active period they belonged to when they are linked to another one (e.g. when a series of occasional work grows or shrinks), so that period gets cancelled
 
 #### **Phase 4: Cancel Unwanted Periods**
 - Cancels periods without employments
@@ -236,12 +252,37 @@ The package automatically handles Belgian worker type requirements:
 - **Flexi workers**: Must declare exact start/end times for each shift
 - **Student workers**: Can aggregate hours per day
 - **Other workers**: Standard declarations
+- **Occasional workers**: Declared per day with exact start/end times, see below
 
 When the API rejects a declaration due to worker type issues (e.g., "flexi requirements not met"), the package:
 1. Stores a `DimonaWorkerTypeException` for that worker
 2. Automatically marks the period as `Outdated`
 3. Retries with the correct worker type
 4. Caches the exception to avoid future errors
+
+The worker type is retried as `Other`, unless the joint commission is listed in `occasional_joint_commissions`: then it is retried as `Occasional`.
+
+### Occasional workers
+
+An occasional worker (`WorkerType::Occasional`, declared as `EXT`) is declared per day, with the start and end hour. Multiple shifts on the same day are declared as a single period, from the earliest start to the latest end. A shift that runs past midnight is declared with its actual end date, and counts as the day it starts on.
+
+Someone who works more than two consecutive days for the same employer, in the same joint commission, is no longer an occasional worker for that series: the whole series is declared as a single `Other` period (`OTH`), from the first to the last day. The package handles the transitions:
+
+- When a third consecutive day is added, the `EXT` periods of the series are cancelled and a single `OTH` period is declared.
+- When the series shrinks back to two days or less, the `OTH` period is cancelled and `EXT` periods are declared for the remaining days.
+- When the series grows or shrinks at its end while staying longer than two days, the end date of the `OTH` period is updated.
+- When the series grows or shrinks at its start while staying longer than two days, the `OTH` period is cancelled and a new one is declared.
+
+Series are computed from the employments passed to `declare()`, and periods are only synced when their start date lies within the given period. So for an occasional worker, start the period on a day without occasional work, and pass all employments from that day on. Otherwise a series that started before the period is split: its first days are left out of the computation, and its `OTH` period is not updated or cancelled.
+
+Employments can be declared as `Occasional` directly, or fall back to it through `occasional_joint_commissions`:
+
+```php
+// config/dimona.php
+'occasional_joint_commissions' => [302],
+```
+
+The contingent of days an occasional worker can be declared for per year is not enforced by the package.
 
 ### State Management
 
