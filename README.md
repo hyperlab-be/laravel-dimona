@@ -266,13 +266,14 @@ The worker type is retried as `Other`, unless the joint commission is listed in 
 
 An occasional worker (`WorkerType::Occasional`, declared as `EXT`) is declared per day, with the start and end hour. Multiple shifts on the same day are declared as a single period, from the earliest start to the latest end. A shift that runs past midnight is declared with its actual end date, and counts as the day it starts on.
 
-Someone who works more than two consecutive days for the same employer is no longer an occasional worker for that series: the whole series is declared as a single `Other` period (`OTH`), from the first to the last day. The package handles the transitions:
+Someone who works more than two consecutive days for the same employer, in the same joint commission, is no longer an occasional worker for that series: the whole series is declared as a single `Other` period (`OTH`), from the first to the last day. The package handles the transitions:
 
 - When a third consecutive day is added, the `EXT` periods of the series are cancelled and a single `OTH` period is declared.
 - When the series shrinks back to two days or less, the `OTH` period is cancelled and `EXT` periods are declared for the remaining days.
-- When the series grows or shrinks while staying longer than two days, the end date of the `OTH` period is updated.
+- When the series grows or shrinks at its end while staying longer than two days, the end date of the `OTH` period is updated.
+- When the series grows or shrinks at its start while staying longer than two days, the `OTH` period is cancelled and a new one is declared.
 
-Series are computed from the employments passed to `declare()`, so pass all employments of a series: an employment that is left out is treated as deleted.
+Series are computed from the employments passed to `declare()`, and periods are only synced when their start date lies within the given period. So for an occasional worker, start the period on a day without occasional work, and pass all employments from that day on. Otherwise a series that started before the period is split: its first days are left out of the computation, and its `OTH` period is not updated or cancelled.
 
 Employments can be declared as `Occasional` directly, or fall back to it through `occasional_joint_commissions`:
 
