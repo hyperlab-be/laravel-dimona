@@ -92,7 +92,7 @@ class EmploymentDataFactory
         return new EmploymentData(
             id: $this->id ?? Str::ulid(),
             jointCommissionNumber: $this->jointCommissionNumber ?? fake()->randomElement([202, 204]),
-            workerType: $this->workerType ?? fake()->randomElement(WorkerType::cases()),
+            workerType: $this->workerType ?? fake()->randomElement([WorkerType::Student, WorkerType::Flexi, WorkerType::Other]),
             startsAt: $this->startsAt ?? CarbonImmutable::parse('2025-10-01 07:00'),
             endsAt: $this->endsAt ?? CarbonImmutable::parse('2025-10-01 12:00'),
             location: $this->location ?? $this->defaultLocation(),

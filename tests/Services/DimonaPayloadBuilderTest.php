@@ -128,6 +128,77 @@ describe('build create payload', function () {
         ]);
     });
 
+    it('builds a create payload for occasional worker type', function () {
+        $dimonaPeriod = new DimonaPeriod([
+            'employer_enterprise_number' => '0123456789',
+            'worker_social_security_number' => '12.34.56-789.10',
+            'joint_commission_number' => 302,
+            'worker_type' => WorkerType::Occasional,
+            'start_date' => '2023-01-01',
+            'start_hour' => '18:00',
+            'end_date' => '2023-01-02',
+            'end_hour' => '02:00',
+        ]);
+
+        $payload = DimonaPayloadBuilder::new()->buildCreatePayload($dimonaPeriod);
+
+        expect($payload)->toBe([
+            'employer' => [
+                'enterpriseNumber' => '0123456789',
+            ],
+            'worker' => [
+                'ssin' => '12345678910',
+            ],
+            'dimonaIn' => [
+                'features' => [
+                    'jointCommissionNumber' => 'XXX',
+                    'workerType' => 'EXT',
+                ],
+                'startDate' => '2023-01-01',
+                'startHour' => '1800',
+                'endDate' => '2023-01-02',
+                'endHour' => '0200',
+            ],
+        ]);
+    });
+
+    it('builds a create payload for other worker type covering consecutive days', function () {
+        $dimonaPeriod = new DimonaPeriod([
+            'employer_enterprise_number' => '0123456789',
+            'worker_social_security_number' => '12345678910',
+            'joint_commission_number' => 302,
+            'worker_type' => WorkerType::Other,
+            'start_date' => '2023-01-01',
+            'end_date' => '2023-01-03',
+        ]);
+
+        $payload = DimonaPayloadBuilder::new()->buildCreatePayload($dimonaPeriod);
+
+        expect($payload['dimonaIn'])->toBe([
+            'features' => [
+                'jointCommissionNumber' => 'XXX',
+                'workerType' => 'OTH',
+            ],
+            'startDate' => '2023-01-01',
+            'endDate' => '2023-01-03',
+        ]);
+    });
+
+    it('builds a create payload for a single day other worker type running past midnight', function () {
+        $dimonaPeriod = new DimonaPeriod([
+            'employer_enterprise_number' => '0123456789',
+            'worker_social_security_number' => '12345678910',
+            'joint_commission_number' => 302,
+            'worker_type' => WorkerType::Other,
+            'start_date' => '2023-01-01',
+            'end_date' => '2023-01-02',
+        ]);
+
+        $payload = DimonaPayloadBuilder::new()->buildCreatePayload($dimonaPeriod);
+
+        expect($payload['dimonaIn']['startDate'])->toBe('2023-01-01')
+            ->and($payload['dimonaIn']['endDate'])->toBe('2023-01-01');
+    });
 });
 
 describe('build update payload', function () {
@@ -193,6 +264,47 @@ describe('build update payload', function () {
         ]);
     });
 
+    it('builds an update payload for occasional worker type', function () {
+        $dimonaPeriod = new DimonaPeriod([
+            'worker_type' => WorkerType::Occasional,
+            'start_date' => '2023-01-01',
+            'start_hour' => '09:00',
+            'end_date' => '2023-01-01',
+            'end_hour' => '17:00',
+        ]);
+        $dimonaPeriod->reference = '123456';
+
+        $payload = DimonaPayloadBuilder::new()->buildUpdatePayload($dimonaPeriod);
+
+        expect($payload)->toBe([
+            'dimonaUpdate' => [
+                'periodId' => 123456,
+                'startDate' => '2023-01-01',
+                'startHour' => '0900',
+                'endDate' => '2023-01-01',
+                'endHour' => '1700',
+            ],
+        ]);
+    });
+
+    it('builds an update payload for other worker type covering consecutive days', function () {
+        $dimonaPeriod = new DimonaPeriod([
+            'worker_type' => WorkerType::Other,
+            'start_date' => '2023-01-01',
+            'end_date' => '2023-01-04',
+        ]);
+        $dimonaPeriod->reference = '123456';
+
+        $payload = DimonaPayloadBuilder::new()->buildUpdatePayload($dimonaPeriod);
+
+        expect($payload)->toBe([
+            'dimonaUpdate' => [
+                'periodId' => 123456,
+                'startDate' => '2023-01-01',
+                'endDate' => '2023-01-04',
+            ],
+        ]);
+    });
 });
 
 describe('build cancel payload', function () {
