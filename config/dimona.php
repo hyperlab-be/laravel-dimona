@@ -28,6 +28,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Occasional Joint Commissions
+    |--------------------------------------------------------------------------
+    |
+    | Joint commissions in which a flexi or student employment that falls
+    | within a worker type exception is declared as an occasional worker
+    | (EXT) instead of Other (OTH). More than two consecutive days of
+    | occasional work are declared as a single Other (OTH) period.
+    |
+    */
+
+    'occasional_joint_commissions' => [],
+
+    /*
+    |--------------------------------------------------------------------------
     | API Clients
     |--------------------------------------------------------------------------
     |

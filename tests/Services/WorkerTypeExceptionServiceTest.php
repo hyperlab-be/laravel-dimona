@@ -182,3 +182,97 @@ describe('handle exceptions', function () {
     });
 
 });
+
+describe('resolve worker type for occasional joint commissions', function () {
+
+    beforeEach(function () {
+        DimonaWorkerTypeException::query()->create([
+            'social_security_number' => '12345678901',
+            'worker_type' => WorkerType::Flexi,
+            'starts_at' => CarbonImmutable::parse('2023-01-01'),
+            'ends_at' => CarbonImmutable::parse('2023-03-31'),
+        ]);
+
+        DimonaWorkerTypeException::query()->create([
+            'social_security_number' => '12345678901',
+            'worker_type' => WorkerType::Student,
+            'starts_at' => CarbonImmutable::parse('2023-01-01'),
+            'ends_at' => CarbonImmutable::parse('2023-12-31'),
+        ]);
+    });
+
+    it('resolves to Occasional when the joint commission is configured', function (WorkerType $workerType) {
+        config()->set('dimona.occasional_joint_commissions', [302]);
+
+        $resolvedType = WorkerTypeExceptionService::new()->resolveWorkerType(
+            workerSocialSecurityNumber: '12345678901',
+            workerType: $workerType,
+            employmentStartsAt: CarbonImmutable::parse('2023-01-15 10:00:00'),
+            jointCommissionNumber: 302,
+        );
+
+        expect($resolvedType)->toBe(WorkerType::Occasional);
+    })->with([WorkerType::Flexi, WorkerType::Student]);
+
+    it('accepts joint commissions configured as strings', function () {
+        config()->set('dimona.occasional_joint_commissions', ['302']);
+
+        $resolvedType = WorkerTypeExceptionService::new()->resolveWorkerType(
+            workerSocialSecurityNumber: '12345678901',
+            workerType: WorkerType::Flexi,
+            employmentStartsAt: CarbonImmutable::parse('2023-01-15 10:00:00'),
+            jointCommissionNumber: 302,
+        );
+
+        expect($resolvedType)->toBe(WorkerType::Occasional);
+    });
+
+    it('resolves to Other when the joint commission is not configured', function () {
+        config()->set('dimona.occasional_joint_commissions', [302]);
+
+        $resolvedType = WorkerTypeExceptionService::new()->resolveWorkerType(
+            workerSocialSecurityNumber: '12345678901',
+            workerType: WorkerType::Flexi,
+            employmentStartsAt: CarbonImmutable::parse('2023-01-15 10:00:00'),
+            jointCommissionNumber: 304,
+        );
+
+        expect($resolvedType)->toBe(WorkerType::Other);
+    });
+
+    it('resolves to Other with the default configuration', function () {
+        $resolvedType = WorkerTypeExceptionService::new()->resolveWorkerType(
+            workerSocialSecurityNumber: '12345678901',
+            workerType: WorkerType::Flexi,
+            employmentStartsAt: CarbonImmutable::parse('2023-01-15 10:00:00'),
+            jointCommissionNumber: 302,
+        );
+
+        expect($resolvedType)->toBe(WorkerType::Other);
+    });
+
+    it('keeps the worker type when no exception exists', function () {
+        config()->set('dimona.occasional_joint_commissions', [302]);
+
+        $resolvedType = WorkerTypeExceptionService::new()->resolveWorkerType(
+            workerSocialSecurityNumber: '12345678901',
+            workerType: WorkerType::Flexi,
+            employmentStartsAt: CarbonImmutable::parse('2023-04-15 10:00:00'),
+            jointCommissionNumber: 302,
+        );
+
+        expect($resolvedType)->toBe(WorkerType::Flexi);
+    });
+
+    it('keeps an Occasional worker type', function () {
+        $resolvedType = WorkerTypeExceptionService::new()->resolveWorkerType(
+            workerSocialSecurityNumber: '12345678901',
+            workerType: WorkerType::Occasional,
+            employmentStartsAt: CarbonImmutable::parse('2023-01-15 10:00:00'),
+            jointCommissionNumber: 302,
+        );
+
+        expect($resolvedType)->toBe(WorkerType::Occasional);
+    });
+
+});
