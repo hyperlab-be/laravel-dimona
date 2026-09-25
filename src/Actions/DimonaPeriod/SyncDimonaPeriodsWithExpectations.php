@@ -69,6 +69,16 @@ class SyncDimonaPeriodsWithExpectations
      */
     private function syncPeriod(DimonaPeriodData $data): void
     {
+        $dimonaPeriod = $this->linkPeriod($data);
+
+        $this->detachEmploymentsFromReplacedPeriods($dimonaPeriod, $data->employmentIds);
+    }
+
+    /**
+     * Link a single expected period to an actual period.
+     */
+    private function linkPeriod(DimonaPeriodData $data): DimonaPeriod
+    {
         // Strategy 1: If an exact match exists (already linked), nothing to do
         $linkedExactlyMatchingPeriod = $this->findLinkedPeriodWithExactMatch($data);
         if ($linkedExactlyMatchingPeriod) {
@@ -79,18 +89,18 @@ class SyncDimonaPeriodsWithExpectations
                 case DimonaPeriodState::New:
                 case DimonaPeriodState::Outdated:
                     // will soon be processed, no further action needed
-                    return;
+                    return $linkedExactlyMatchingPeriod;
                 case DimonaPeriodState::Accepted:
                 case DimonaPeriodState::Refused:
                     // final state, no further action needed
-                    return;
+                    return $linkedExactlyMatchingPeriod;
                 case DimonaPeriodState::AcceptedWithWarning:
                 case DimonaPeriodState::Cancelled:
                     // should be replaced, continue
                     break;
                 case DimonaPeriodState::Failed:
                     // TODO: What now? Should we retry?
-                    return;
+                    return $linkedExactlyMatchingPeriod;
             }
         }
 
@@ -99,7 +109,7 @@ class SyncDimonaPeriodsWithExpectations
         if ($linkedLooselyMatchingPeriod) {
             $this->updatePeriodFields($linkedLooselyMatchingPeriod, $data);
 
-            return;
+            return $linkedLooselyMatchingPeriod;
         }
 
         // Strategy 3: Reuse an unused period
@@ -107,11 +117,11 @@ class SyncDimonaPeriodsWithExpectations
         if ($unlinkedLooselyMatchingPeriod) {
             $this->updatePeriodFields($unlinkedLooselyMatchingPeriod, $data);
 
-            return;
+            return $unlinkedLooselyMatchingPeriod;
         }
 
         // Strategy 4: Create a new period
-        $this->createNewPeriod($data);
+        return $this->createNewPeriod($data);
     }
 
     /**
@@ -225,7 +235,7 @@ class SyncDimonaPeriodsWithExpectations
         }
     }
 
-    private function createNewPeriod(DimonaPeriodData $data): void
+    private function createNewPeriod(DimonaPeriodData $data): DimonaPeriod
     {
         $newPeriod = DimonaPeriod::query()->create([
             'employer_enterprise_number' => $this->employerEnterpriseNumber,
@@ -250,6 +260,35 @@ class SyncDimonaPeriodsWithExpectations
         $this->linkEmployments($newPeriod, $data->employmentIds);
 
         DimonaPeriodCreated::dispatch($newPeriod);
+
+        return $newPeriod;
+    }
+
+    /**
+     * An employment belongs to a single active period. When it is linked to another period,
+     * e.g. because its worker type changed or its series of consecutive days grew or shrank,
+     * it is detached from the period it belonged to, so that period gets cancelled.
+     *
+     * @param  array<string>  $employmentIds
+     */
+    private function detachEmploymentsFromReplacedPeriods(DimonaPeriod $dimonaPeriod, array $employmentIds): void
+    {
+        DB::table('dimona_period_employment')
+            ->whereIn('employment_id', $employmentIds)
+            ->where('dimona_period_id', '!=', $dimonaPeriod->id)
+            ->whereIn('dimona_period_id', function ($query) {
+                $query
+                    ->select('id')
+                    ->from('dimona_periods')
+                    ->where('employer_enterprise_number', $this->employerEnterpriseNumber)
+                    ->where('worker_social_security_number', $this->workerSocialSecurityNumber)
+                    ->whereIn('state', [
+                        DimonaPeriodState::New->value,
+                        DimonaPeriodState::Outdated->value,
+                        DimonaPeriodState::Accepted->value,
+                    ]);
+            })
+            ->delete();
     }
 
     /**
