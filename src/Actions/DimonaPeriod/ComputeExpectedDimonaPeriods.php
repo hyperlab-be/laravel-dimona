@@ -176,7 +176,8 @@ class ComputeExpectedDimonaPeriods
     }
 
     /**
-     * @return Collection<Collection<string, Collection<EmploymentData>>> series of consecutive days, keyed by date
+     * @return Collection<Collection<string, Collection<EmploymentData>>> series of consecutive days, keyed by date,
+     *                                                                    with the employments of each day sorted by start
      */
     private function groupIntoConsecutiveDays(Collection $employments): Collection
     {
@@ -207,7 +208,7 @@ class ComputeExpectedDimonaPeriods
     private function createOccasionalPeriod(Collection $employments): DimonaPeriodData
     {
         /** @var EmploymentData $firstEmployment */
-        $firstEmployment = $employments->sortBy('startsAt')->first();
+        $firstEmployment = $employments->first();
         $endsAt = $employments->max('endsAt');
 
         return new DimonaPeriodData(
@@ -233,7 +234,7 @@ class ComputeExpectedDimonaPeriods
         $employments = $days->flatten(1);
 
         /** @var EmploymentData $firstEmployment */
-        $firstEmployment = $employments->sortBy('startsAt')->first();
+        $firstEmployment = $employments->first();
 
         return new DimonaPeriodData(
             employmentIds: $employments->pluck('id')->all(),

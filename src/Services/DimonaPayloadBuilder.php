@@ -62,12 +62,11 @@ class DimonaPayloadBuilder
             $payload['dimonaIn']['startHour'] = Str::remove(':', $dimonaPeriod->start_hour);
             $payload['dimonaIn']['endDate'] = $dimonaPeriod->end_date;
             $payload['dimonaIn']['endHour'] = Str::remove(':', $dimonaPeriod->end_hour);
-        } elseif ($this->coversConsecutiveDays($dimonaPeriod)) {
-            $payload['dimonaIn']['startDate'] = $dimonaPeriod->start_date;
-            $payload['dimonaIn']['endDate'] = $dimonaPeriod->end_date;
         } else {
             $payload['dimonaIn']['startDate'] = $dimonaPeriod->start_date;
-            $payload['dimonaIn']['endDate'] = $dimonaPeriod->start_date;
+            $payload['dimonaIn']['endDate'] = $this->coversConsecutiveDays($dimonaPeriod)
+                ? $dimonaPeriod->end_date
+                : $dimonaPeriod->start_date;
         }
 
         return $payload;
@@ -90,12 +89,11 @@ class DimonaPayloadBuilder
             $payload['dimonaUpdate']['startHour'] = Str::remove(':', $dimonaPeriod->start_hour);
             $payload['dimonaUpdate']['endDate'] = $dimonaPeriod->end_date;
             $payload['dimonaUpdate']['endHour'] = Str::remove(':', $dimonaPeriod->end_hour);
-        } elseif ($this->coversConsecutiveDays($dimonaPeriod)) {
-            $payload['dimonaUpdate']['startDate'] = $dimonaPeriod->start_date;
-            $payload['dimonaUpdate']['endDate'] = $dimonaPeriod->end_date;
         } else {
             $payload['dimonaUpdate']['startDate'] = $dimonaPeriod->start_date;
-            $payload['dimonaUpdate']['endDate'] = $dimonaPeriod->start_date;
+            $payload['dimonaUpdate']['endDate'] = $this->coversConsecutiveDays($dimonaPeriod)
+                ? $dimonaPeriod->end_date
+                : $dimonaPeriod->start_date;
         }
 
         return $payload;
@@ -116,9 +114,10 @@ class DimonaPayloadBuilder
     }
 
     /**
-     * An Other period covering a series of consecutive days is declared up to its last day.
-     * Any other period is declared for its start date only: its end date is at most the next day,
-     * when the shift runs past midnight.
+     * A single day period ends at most the next day, when the shift runs past midnight, and is
+     * declared for its start date only. An Other period that ends later covers a series of
+     * consecutive occasional days (see ComputeExpectedDimonaPeriods::MAX_CONSECUTIVE_OCCASIONAL_DAYS)
+     * and is declared up to its end date.
      */
     private function coversConsecutiveDays(DimonaPeriod $dimonaPeriod): bool
     {
@@ -126,9 +125,6 @@ class DimonaPayloadBuilder
             return false;
         }
 
-        $startDate = CarbonImmutable::parse($dimonaPeriod->start_date);
-        $endDate = CarbonImmutable::parse($dimonaPeriod->end_date);
-
-        return $startDate->diffInDays($endDate) >= 2;
+        return CarbonImmutable::parse($dimonaPeriod->start_date)->addDay()->lt($dimonaPeriod->end_date);
     }
 }

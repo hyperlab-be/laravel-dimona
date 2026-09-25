@@ -51,7 +51,7 @@ class WorkerTypeExceptionService
      */
     private function fallbackWorkerType(?int $jointCommissionNumber): WorkerType
     {
-        $occasionalJointCommissions = array_map('intval', config('dimona.occasional_joint_commissions', []));
+        $occasionalJointCommissions = config('dimona.occasional_joint_commissions', []);
 
         return in_array($jointCommissionNumber, $occasionalJointCommissions, true)
             ? WorkerType::Occasional

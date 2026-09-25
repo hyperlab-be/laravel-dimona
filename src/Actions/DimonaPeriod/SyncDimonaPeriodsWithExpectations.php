@@ -14,6 +14,15 @@ use LogicException;
 
 class SyncDimonaPeriodsWithExpectations
 {
+    /**
+     * Periods in these states can be updated, reused or replaced.
+     */
+    private const array ACTIVE_STATES = [
+        DimonaPeriodState::New,
+        DimonaPeriodState::Outdated,
+        DimonaPeriodState::Accepted,
+    ];
+
     private string $employerEnterpriseNumber;
 
     private string $workerSocialSecurityNumber;
@@ -159,11 +168,7 @@ class SyncDimonaPeriodsWithExpectations
             ->where('worker_type', $data->workerType)
             ->where('joint_commission_number', $data->jointCommissionNumber)
             ->where('start_date', $data->startDate)
-            ->whereIn('state', [
-                DimonaPeriodState::New,
-                DimonaPeriodState::Outdated,
-                DimonaPeriodState::Accepted,
-            ])
+            ->whereIn('state', self::ACTIVE_STATES)
             ->whereHas('dimona_period_employments', function ($query) use ($data) {
                 $query->whereIn('employment_id', $data->employmentIds);
             })
@@ -182,11 +187,7 @@ class SyncDimonaPeriodsWithExpectations
             ->where('worker_type', $data->workerType)
             ->where('joint_commission_number', $data->jointCommissionNumber)
             ->where('start_date', $data->startDate)
-            ->whereIn('state', [
-                DimonaPeriodState::New,
-                DimonaPeriodState::Outdated,
-                DimonaPeriodState::Accepted,
-            ])
+            ->whereIn('state', self::ACTIVE_STATES)
             ->whereDoesntHave('dimona_period_employments')
             ->first();
     }
@@ -282,11 +283,7 @@ class SyncDimonaPeriodsWithExpectations
                     ->from('dimona_periods')
                     ->where('employer_enterprise_number', $this->employerEnterpriseNumber)
                     ->where('worker_social_security_number', $this->workerSocialSecurityNumber)
-                    ->whereIn('state', [
-                        DimonaPeriodState::New->value,
-                        DimonaPeriodState::Outdated->value,
-                        DimonaPeriodState::Accepted->value,
-                    ]);
+                    ->whereIn('state', self::ACTIVE_STATES);
             })
             ->delete();
     }
