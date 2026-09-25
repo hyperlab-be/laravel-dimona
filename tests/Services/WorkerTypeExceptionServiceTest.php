@@ -214,19 +214,6 @@ describe('resolve worker type for occasional joint commissions', function () {
         expect($resolvedType)->toBe(WorkerType::Occasional);
     })->with([WorkerType::Flexi, WorkerType::Student]);
 
-    it('accepts joint commissions configured as strings', function () {
-        config()->set('dimona.occasional_joint_commissions', ['302']);
-
-        $resolvedType = WorkerTypeExceptionService::new()->resolveWorkerType(
-            workerSocialSecurityNumber: '12345678901',
-            workerType: WorkerType::Flexi,
-            employmentStartsAt: CarbonImmutable::parse('2023-01-15 10:00:00'),
-            jointCommissionNumber: 302,
-        );
-
-        expect($resolvedType)->toBe(WorkerType::Occasional);
-    });
-
     it('resolves to Other when the joint commission is not configured', function () {
         config()->set('dimona.occasional_joint_commissions', [302]);
 

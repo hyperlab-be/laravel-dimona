@@ -1,10 +1,12 @@
 <?php
 
 use Carbon\CarbonPeriodImmutable;
+use Hyperlab\Dimona\Data\EmploymentData;
 use Hyperlab\Dimona\Enums\DimonaPeriodState;
 use Hyperlab\Dimona\Enums\WorkerType;
 use Hyperlab\Dimona\Jobs\SyncDimonaPeriodsJob;
 use Hyperlab\Dimona\Models\DimonaPeriod;
+use Hyperlab\Dimona\Models\DimonaWorkerTypeException;
 use Hyperlab\Dimona\Tests\Factories\EmploymentDataFactory;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Collection;
@@ -43,19 +45,6 @@ beforeEach(function () {
     });
 });
 
-function occasionalEmploymentsFor(array $days): Collection
-{
-    return collect($days)->map(
-        fn (string $day) => EmploymentDataFactory::new()
-            ->id("emp-{$day}")
-            ->jointCommissionNumber(302)
-            ->workerType(WorkerType::Occasional)
-            ->startsAt("{$day} 18:00")
-            ->endsAt("{$day} 23:00")
-            ->create()
-    );
-}
-
 /**
  * Run the job, and the jobs it dispatches, until there is nothing left to do.
  */
@@ -80,7 +69,7 @@ function runSyncUntilDone(Collection $employments): void
 }
 
 it('declares occasional periods as EXT with hours', function () {
-    runSyncUntilDone(occasionalEmploymentsFor(['2025-10-01', '2025-10-02']));
+    runSyncUntilDone(EmploymentDataFactory::occasionalOnDays(['2025-10-01', '2025-10-02']));
 
     expect($this->sentPayloads)->toHaveCount(2)
         ->and($this->sentPayloads->pluck('dimonaIn.features.workerType')->all())->toBe(['EXT', 'EXT'])
@@ -94,10 +83,10 @@ it('declares occasional periods as EXT with hours', function () {
 });
 
 it('cancels the EXT periods and declares a single OTH when a third consecutive day is added', function () {
-    runSyncUntilDone(occasionalEmploymentsFor(['2025-10-01', '2025-10-02']));
+    runSyncUntilDone(EmploymentDataFactory::occasionalOnDays(['2025-10-01', '2025-10-02']));
     $this->sentPayloads = new Collection;
 
-    runSyncUntilDone(occasionalEmploymentsFor(['2025-10-01', '2025-10-02', '2025-10-03']));
+    runSyncUntilDone(EmploymentDataFactory::occasionalOnDays(['2025-10-01', '2025-10-02', '2025-10-03']));
 
     expect($this->sentPayloads)->toHaveCount(3)
         ->and($this->sentPayloads[0])->toHaveKey('dimonaCancel')
@@ -119,10 +108,10 @@ it('cancels the EXT periods and declares a single OTH when a third consecutive d
 });
 
 it('cancels the OTH period and declares EXT periods when the series shrinks to two days', function () {
-    runSyncUntilDone(occasionalEmploymentsFor(['2025-10-01', '2025-10-02', '2025-10-03']));
+    runSyncUntilDone(EmploymentDataFactory::occasionalOnDays(['2025-10-01', '2025-10-02', '2025-10-03']));
     $this->sentPayloads = new Collection;
 
-    runSyncUntilDone(occasionalEmploymentsFor(['2025-10-01', '2025-10-02']));
+    runSyncUntilDone(EmploymentDataFactory::occasionalOnDays(['2025-10-01', '2025-10-02']));
 
     expect($this->sentPayloads)->toHaveCount(3)
         ->and($this->sentPayloads[0])->toHaveKey('dimonaCancel')
@@ -140,10 +129,10 @@ it('cancels the OTH period and declares EXT periods when the series shrinks to t
 });
 
 it('updates the end date of the OTH period when a fourth consecutive day is added', function () {
-    runSyncUntilDone(occasionalEmploymentsFor(['2025-10-01', '2025-10-02', '2025-10-03']));
+    runSyncUntilDone(EmploymentDataFactory::occasionalOnDays(['2025-10-01', '2025-10-02', '2025-10-03']));
     $this->sentPayloads = new Collection;
 
-    runSyncUntilDone(occasionalEmploymentsFor(['2025-10-01', '2025-10-02', '2025-10-03', '2025-10-04']));
+    runSyncUntilDone(EmploymentDataFactory::occasionalOnDays(['2025-10-01', '2025-10-02', '2025-10-03', '2025-10-04']));
 
     $other = DimonaPeriod::query()->sole();
 
@@ -155,4 +144,46 @@ it('updates the end date of the OTH period when a fourth consecutive day is adde
         ])
         ->and($other->state)->toBe(DimonaPeriodState::Accepted)
         ->and($other->end_date)->toBe('2025-10-04');
+});
+
+/**
+ * Flexi employments on the given days, with the hours and joint commission of occasionalOn().
+ */
+function flexiEmploymentsOnDays(array $days): Collection
+{
+    return EmploymentDataFactory::occasionalOnDays($days)->each(function (EmploymentData $employment) {
+        $employment->workerType = WorkerType::Flexi;
+    });
+}
+
+describe('fallback from flexi', function () {
+
+    beforeEach(function () {
+        config()->set('dimona.occasional_joint_commissions', [302]);
+
+        DimonaWorkerTypeException::query()->create([
+            'social_security_number' => $this->workerSocialSecurityNumber,
+            'worker_type' => WorkerType::Flexi,
+            'starts_at' => '2025-10-01 00:00:00',
+            'ends_at' => '2025-12-31 23:59:59',
+        ]);
+    });
+
+    it('declares flexi employments within an exception as EXT', function () {
+        runSyncUntilDone(flexiEmploymentsOnDays(['2025-10-01', '2025-10-02']));
+
+        expect($this->sentPayloads->pluck('dimonaIn.features.workerType')->all())->toBe(['EXT', 'EXT']);
+    });
+
+    it('declares three consecutive flexi days within an exception as a single OTH', function () {
+        runSyncUntilDone(flexiEmploymentsOnDays(['2025-10-01', '2025-10-02', '2025-10-03']));
+
+        expect($this->sentPayloads)->toHaveCount(1)
+            ->and($this->sentPayloads[0]['dimonaIn'])->toMatchArray([
+                'startDate' => '2025-10-01',
+                'endDate' => '2025-10-03',
+            ])
+            ->and($this->sentPayloads[0]['dimonaIn']['features']['workerType'])->toBe('OTH');
+    });
+
 });

@@ -18,17 +18,9 @@ beforeEach(function () {
  */
 function syncOccasionalEmploymentsOnDays(array $days): void
 {
-    $employments = collect($days)->map(
-        fn (string $day) => EmploymentDataFactory::new()
-            ->id("emp-{$day}")
-            ->jointCommissionNumber(302)
-            ->workerType(WorkerType::Occasional)
-            ->startsAt("{$day} 18:00")
-            ->endsAt("{$day} 23:00")
-            ->create()
-    );
-
-    syncPeriods(ComputeExpectedDimonaPeriods::new()->execute(test()->employerNumber, test()->workerSsn, $employments));
+    syncPeriods(ComputeExpectedDimonaPeriods::new()->execute(
+        test()->employerNumber, test()->workerSsn, EmploymentDataFactory::occasionalOnDays($days)
+    ));
 }
 
 function makeOccasionalPeriod(string $day, array $overrides = []): DimonaPeriod
@@ -144,15 +136,30 @@ it('shortens the other period when the last day of a longer series is removed', 
         ->and(getEmploymentIds($other))->toBe(['emp-2025-10-01', 'emp-2025-10-02', 'emp-2025-10-03']);
 });
 
-it('keeps employments linked to periods that are no longer active', function () {
-    $refused = makePeriod([
+it('replaces the other period when the first day of a longer series is removed', function () {
+    $other = makeOtherPeriodForSeries(['2025-10-01', '2025-10-02', '2025-10-03', '2025-10-04']);
+
+    syncOccasionalEmploymentsOnDays(['2025-10-02', '2025-10-03', '2025-10-04']);
+
+    $new = DimonaPeriod::query()->whereKeyNot($other->id)->sole();
+
+    expect($new->worker_type)->toBe(WorkerType::Other)
+        ->and($new->state)->toBe(DimonaPeriodState::New)
+        ->and($new->start_date)->toBe('2025-10-02')
+        ->and($new->end_date)->toBe('2025-10-04')
+        ->and(getEmploymentIds($new))->toBe(['emp-2025-10-02', 'emp-2025-10-03', 'emp-2025-10-04'])
+        ->and(getEmploymentIds($other))->toBe([]);
+});
+
+it('keeps employments linked to periods that are no longer active', function (DimonaPeriodState $state) {
+    $inactive = makePeriod([
         'joint_commission_number' => 302,
         'worker_type' => WorkerType::Flexi,
         'start_date' => '2025-10-01',
         'start_hour' => '18:00',
         'end_date' => '2025-10-01',
         'end_hour' => '23:00',
-        'state' => DimonaPeriodState::Refused,
+        'state' => $state,
     ], ['emp-2025-10-01']);
 
     syncOccasionalEmploymentsOnDays(['2025-10-01']);
@@ -160,5 +167,9 @@ it('keeps employments linked to periods that are no longer active', function () 
     $occasional = DimonaPeriod::query()->where('worker_type', WorkerType::Occasional)->sole();
 
     expect(getEmploymentIds($occasional))->toBe(['emp-2025-10-01'])
-        ->and(getEmploymentIds($refused))->toBe(['emp-2025-10-01']);
-});
+        ->and(getEmploymentIds($inactive))->toBe(['emp-2025-10-01']);
+})->with([
+    DimonaPeriodState::Refused,
+    DimonaPeriodState::AcceptedWithWarning,
+    DimonaPeriodState::Cancelled,
+]);

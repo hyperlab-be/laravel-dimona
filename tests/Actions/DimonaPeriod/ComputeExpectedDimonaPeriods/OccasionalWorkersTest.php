@@ -20,14 +20,6 @@ function occasionalEmployment(string $id, string $startsAt, string $endsAt, int 
         ->create();
 }
 
-/**
- * Occasional employments from 18:00 to 23:00 on each of the given days.
- */
-function occasionalEmploymentsOnDays(array $days): Collection
-{
-    return collect($days)->map(fn (string $day) => occasionalEmployment("employment-{$day}", "{$day} 18:00", "{$day} 23:00"));
-}
-
 describe('worker type fallback', function () {
 
     beforeEach(function () {
@@ -78,7 +70,7 @@ describe('worker type fallback', function () {
 
         $employments = collect(['2025-10-01', '2025-10-02', '2025-10-03'])->map(
             fn (string $day) => EmploymentDataFactory::new()
-                ->id("employment-{$day}")
+                ->id("emp-{$day}")
                 ->jointCommissionNumber(304)
                 ->workerType(WorkerType::Flexi)
                 ->startsAt("{$day} 18:00")
@@ -92,9 +84,9 @@ describe('worker type fallback', function () {
             ->and($result->pluck('workerType')->unique()->all())->toBe([WorkerType::Other])
             ->and($result->pluck('startDate')->all())->toBe(['2025-10-01', '2025-10-02', '2025-10-03'])
             ->and($result->pluck('employmentIds')->all())->toBe([
-                ['employment-2025-10-01'],
-                ['employment-2025-10-02'],
-                ['employment-2025-10-03'],
+                ['emp-2025-10-01'],
+                ['emp-2025-10-02'],
+                ['emp-2025-10-03'],
             ]);
     });
 
@@ -164,23 +156,23 @@ describe('occasional period per day', function () {
 describe('series of consecutive days', function () {
 
     it('declares a single day as occasional', function () {
-        $result = computeExpectedDimonaPeriods(occasionalEmploymentsOnDays(['2025-10-01']));
+        $result = computeExpectedDimonaPeriods(EmploymentDataFactory::occasionalOnDays(['2025-10-01']));
 
         expect($result)->toHaveCount(1)
             ->and($result[0]->workerType)->toBe(WorkerType::Occasional);
     });
 
     it('declares two consecutive days as occasional per day', function () {
-        $result = computeExpectedDimonaPeriods(occasionalEmploymentsOnDays(['2025-10-01', '2025-10-02']));
+        $result = computeExpectedDimonaPeriods(EmploymentDataFactory::occasionalOnDays(['2025-10-01', '2025-10-02']));
 
         expect($result)->toHaveCount(2)
             ->and($result->pluck('workerType')->unique()->all())->toBe([WorkerType::Occasional])
             ->and($result->pluck('startDate')->all())->toBe(['2025-10-01', '2025-10-02'])
-            ->and($result->pluck('employmentIds')->all())->toBe([['employment-2025-10-01'], ['employment-2025-10-02']]);
+            ->and($result->pluck('employmentIds')->all())->toBe([['emp-2025-10-01'], ['emp-2025-10-02']]);
     });
 
     it('declares three consecutive days as a single other period', function () {
-        $result = computeExpectedDimonaPeriods(occasionalEmploymentsOnDays(['2025-10-01', '2025-10-02', '2025-10-03']));
+        $result = computeExpectedDimonaPeriods(EmploymentDataFactory::occasionalOnDays(['2025-10-01', '2025-10-02', '2025-10-03']));
 
         expect($result)->toHaveCount(1)
             ->and($result[0]->workerType)->toBe(WorkerType::Other)
@@ -190,11 +182,11 @@ describe('series of consecutive days', function () {
             ->and($result[0]->endDate)->toBe('2025-10-03')
             ->and($result[0]->endHour)->toBeNull()
             ->and($result[0]->numberOfHours)->toBeNull()
-            ->and($result[0]->employmentIds)->toBe(['employment-2025-10-01', 'employment-2025-10-02', 'employment-2025-10-03']);
+            ->and($result[0]->employmentIds)->toBe(['emp-2025-10-01', 'emp-2025-10-02', 'emp-2025-10-03']);
     });
 
     it('declares five consecutive days as a single other period', function () {
-        $result = computeExpectedDimonaPeriods(occasionalEmploymentsOnDays([
+        $result = computeExpectedDimonaPeriods(EmploymentDataFactory::occasionalOnDays([
             '2025-10-05', '2025-10-01', '2025-10-03', '2025-10-02', '2025-10-04',
         ]));
 
@@ -206,7 +198,7 @@ describe('series of consecutive days', function () {
     });
 
     it('splits series on a day without work', function () {
-        $result = computeExpectedDimonaPeriods(occasionalEmploymentsOnDays([
+        $result = computeExpectedDimonaPeriods(EmploymentDataFactory::occasionalOnDays([
             '2025-10-01', '2025-10-02', '2025-10-03',
             '2025-10-05', '2025-10-06',
         ]));
@@ -257,7 +249,7 @@ describe('series of consecutive days', function () {
     });
 
     it('keeps other worker types per day next to a series', function () {
-        $result = computeExpectedDimonaPeriods(occasionalEmploymentsOnDays(['2025-10-01', '2025-10-02', '2025-10-03'])->push(
+        $result = computeExpectedDimonaPeriods(EmploymentDataFactory::occasionalOnDays(['2025-10-01', '2025-10-02', '2025-10-03'])->push(
             EmploymentDataFactory::new()
                 ->id('flexi-employment')
                 ->jointCommissionNumber(302)
